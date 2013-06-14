@@ -69,7 +69,7 @@ namespace threadpool {
 		{
 			while (tasksLeft())
 			{
-				this_thread::sleep_for(duration<100, milli>);
+				this_thread::sleep_for(chrono::milliseconds(100));
 			}
 			for_each(begin(p_threads), end(p_threads), bind(Thread::join, _1));
 		}
