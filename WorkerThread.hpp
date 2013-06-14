@@ -50,7 +50,7 @@ namespace threadpool {
 					}
 				}
 				
-				this_thread::sleep_for(duration<20, milli>);
+				this_thread::sleep_for(chrono::milliseconds(20));
 			}
 		}
 
