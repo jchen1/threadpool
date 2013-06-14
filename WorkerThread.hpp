@@ -12,7 +12,7 @@ namespace threadpool {
 	class WorkerThread
 	{
 	public:
-		WorkerThread(shared_ptr<ThreadPool> pool) :
+		WorkerThread(ThreadPool* pool) :
 			p_pool(pool)
 		{
 			//create thread
@@ -28,7 +28,7 @@ namespace threadpool {
 
 	private:
 		thread m_thread;
-		shared_ptr<ThreadPool> p_pool;
+		ThreadPool* p_pool;
 		unique_ptr<Task> p_currentTask;
 		
 		void run()
