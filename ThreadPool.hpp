@@ -3,6 +3,7 @@
 #include <vector>
 #include <queue>
 #include <functional>
+#include <mutex>
 
 #include "WorkerThread.hpp"
 
@@ -26,7 +27,6 @@ namespace threadpool {
 			m_threadsRunning(0),
 			m_threadsPending(0)
 		{
-			//critical sectioninit
 			m_threads.reserve(m_maxThreads);
 		}
 
@@ -34,7 +34,6 @@ namespace threadpool {
 		~ThreadPool()
 		{
 			joinAll();
-			//delete mutex
 		}
 		
 		void addTask(Task t)
@@ -44,9 +43,9 @@ namespace threadpool {
 				m_threads.emplace_back(new Thread(shared_from_this()));
 				++m_threadsCreated;
 			}
-			//lock
+			m_taskQueuMutex.lock();
 			p_taskQueue.push(unique_ptr<Task>(new Task(t)));
-			//unlock
+			m_taskQueueMutex.unlock();
 			m_bTasksLeft = true;
 		}
 		
@@ -64,11 +63,14 @@ namespace threadpool {
 		}
 		
 		inline bool tasksLeft() { return m_bTasksLeft; }
-		inline bool isRuning() { return m_bRunning; }
+		inline bool isRunning() { return m_bRunning; }
 
 		void joinAll()
 		{
-			//while not empty event
+			while (tasksLeft())
+			{
+				//sleep(100);
+			}
 			for_each(begin(p_threads), end(p_threads), bind(Thread::join, _1));
 		}
 
@@ -78,7 +80,7 @@ namespace threadpool {
 		vector<unique_ptr<Thread>> p_threads;
 		queue<unique_ptr<Task>> p_taskQueue;
 		queue<void*> p_tasksCompleted;
-		//lock
+		mutex m_taskQueueMutex;
 		bool m_bTasksLeft, m_bRunning;
 		int m_maxThreads, m_ThreadsCreated;
 		
@@ -87,7 +89,7 @@ namespace threadpool {
 		unique_ptr<Task> getNextTask()
 		{
 			unique_ptr<Task> task;
-			//lock
+			m_taskQueueMutex.lock();
 			if (tasksLeft())
 			{
 				task = move(p_taskQueue.front());
@@ -101,7 +103,7 @@ namespace threadpool {
 			{
 				m_bTasksLeft = false;
 			}
-			//unlock
+			m_taskQueueMutex.unlock();
 			return task;
 		}
 
