@@ -12,7 +12,7 @@ namespace threadpool {
 	using namespace std;
 	using std::placeholders::_1;
 
-	class ThreadPool : public enable_shared_from_this<ThreadPool>
+	class ThreadPool
 	{
 	public:
 	
@@ -40,7 +40,7 @@ namespace threadpool {
 		{
 			if (m_threadsPending == 0 && m_threadsCreated < m_maxThreads)
 			{
-				m_threads.emplace_back(new Thread(shared_from_this()));
+				m_threads.emplace_back(new Thread(this));
 				++m_threadsCreated;
 			}
 			m_taskQueuMutex.lock();
