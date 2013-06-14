@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thread>
+#include <chrono>
 
 namespace threadpool {
 	
@@ -49,7 +50,7 @@ namespace threadpool {
 					}
 				}
 				
-				//sleep(20);
+				this_thread::sleep_for(duration<20, milli>);
 			}
 		}
 
