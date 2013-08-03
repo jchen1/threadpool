@@ -11,7 +11,7 @@ template <class threadpool>
 class worker_thread
 {
 public:
-    
+
     typedef std::shared_ptr<worker_thread<threadpool>> worker_thread_ptr;
     worker_thread(std::shared_ptr<threadpool> pool) :
         m_pool(pool)

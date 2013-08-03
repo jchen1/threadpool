@@ -21,7 +21,7 @@ public:
         m_threads_created(0),
         m_stop_requested(false)
     {
-        m_threads.reserve(max_threads);
+        m_threads.reserve(m_max_threads);
     }
 
     ~threadpool()
@@ -37,11 +37,12 @@ public:
         }
 
         m_task_mutex.lock();
-        if (m_threads_running == m_threads_created &&
-            m_threads_running != m_max_threads)
+        if (m_threads_created == m_threads_running &&
+            m_threads_created != m_max_threads)
         {
             m_threads.emplace_back(
                 worker_thread<threadpool>::create_and_attach(get_ptr()));
+            ++m_threads_created;
         }
         m_tasks.push(std::move(task));
         m_task_mutex.unlock();
@@ -64,7 +65,16 @@ public:
             m_task_mutex.unlock();
         }
 
-        return (!m_stop_requested);
+        return (!empty());
+    }
+
+    bool empty()
+    {
+        bool ret;
+        m_task_mutex.lock();
+        ret = m_tasks.empty();
+        m_task_mutex.unlock();
+        return ret;
     }
 
     void clear()
