@@ -3,7 +3,7 @@
 
 
 
-class ThreadPool
+class thread_pool
 {
 
 

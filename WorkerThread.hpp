@@ -2,8 +2,28 @@
 #define THREADPOOL_WORKERTHREAD_H
 
 
-class WorkerThread
+class worker_thread
 {
+public:
+
+	worker_thread()
+	{
+
+	}
+
+	~worker_thread()
+	{
+
+	}
+
+private:
+
+	void run()
+	{
+
+	}
+
+	int 
 
 
 };
