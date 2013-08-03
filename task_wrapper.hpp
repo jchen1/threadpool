@@ -24,6 +24,11 @@ public:
 		}
 	}
 
+	static std::unique_ptr<task_wrapper>  make_task_ptr(task_func function)
+	{
+		return std::unique_ptr<task_wrapper>(new task_wrapper(function));
+	}
+
 private:
 
 	task_func m_function;
