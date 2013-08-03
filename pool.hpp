@@ -3,11 +3,13 @@
 
 #include "pool_core.hpp"
 
+namespace threadpool {
+
 class threadpool
 {
 public:
 	threadpool(int max_threads) :
-		m_core(new pool_core(10))
+		m_core(new pool_core(max_threads))
 	{
 
 	}
@@ -45,5 +47,7 @@ public:
 private:
 	std::shared_ptr<pool_core> m_core;
 };
+
+}
 
 #endif

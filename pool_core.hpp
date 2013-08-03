@@ -10,6 +10,8 @@
 #include "task_wrapper.hpp"
 #include "worker_thread.hpp"
 
+namespace threadpool {
+
 class pool_core : public std::enable_shared_from_this<pool_core>
 {
 
@@ -135,5 +137,7 @@ private:
     friend class worker_thread<pool_core>;
 
 };
+
+}
 
 #endif //THREADPOOL_POOLCORE_H

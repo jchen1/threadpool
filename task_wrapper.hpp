@@ -4,6 +4,8 @@
 #include <functional>
 #include <memory>
 
+namespace threadpool {
+
 typedef std::function<void(void)> task_func;
 
 class task_wrapper
@@ -35,5 +37,7 @@ private:
 };
 
 typedef std::unique_ptr<task_wrapper> task_ptr;
+
+}
 
 #endif //THREADPOOL_TASKWRAPPER_H

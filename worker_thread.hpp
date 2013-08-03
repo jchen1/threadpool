@@ -7,6 +7,8 @@
 
 #include "task_wrapper.hpp"
 
+namespace threadpool {
+
 template <class pool_core>
 class worker_thread
 {
@@ -56,5 +58,7 @@ private:
     std::shared_ptr<std::thread> m_thread;
 
 };
+
+}
 
 #endif //THREADPOOL_WORKERTHREAD_H
