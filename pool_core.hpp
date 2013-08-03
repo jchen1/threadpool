@@ -96,11 +96,6 @@ public:
 
     void wait(bool clear_tasks)
     {
-        wait(-1, clear_tasks);
-    }
-
-    void wait(long max_wait_ms, bool clear_tasks)
-    {
         if (clear_tasks)
         {
             clear();

@@ -12,11 +12,7 @@ class task_wrapper
 {
 public:
 
-	task_wrapper(task_func function) :
-		m_function(function)
-	{
-
-	}
+	task_wrapper(task_func function) : m_function(function) {}
 
 	void operator() (void) const
 	{

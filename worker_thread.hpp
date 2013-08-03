@@ -1,9 +1,9 @@
 #ifndef THREADPOOL_WORKERTHREAD_H
 #define THREADPOOL_WORKERTHREAD_H
 
-#include <thread>
-#include <memory>
 #include <functional>
+#include <memory>
+#include <thread>
 
 #include "task_wrapper.hpp"
 
@@ -15,11 +15,8 @@ class worker_thread
 public:
 
     typedef std::shared_ptr<worker_thread<pool_core>> worker_thread_ptr;
-    worker_thread(std::shared_ptr<pool_core> pool) :
-        m_pool(pool)
-    {
-
-    }
+    
+    worker_thread(std::shared_ptr<pool_core> pool) : m_pool(pool) {}
 
     ~worker_thread()
     {

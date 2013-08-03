@@ -8,40 +8,31 @@ namespace threadpool {
 class threadpool
 {
 public:
-	threadpool(int max_threads) :
-		m_core(new pool_core(max_threads))
-	{
+	threadpool(int max_threads) : m_core(new pool_core(max_threads)) {}
 
-	}
-
-	void add_task(task_ptr task)
+	inline void add_task(task_ptr task)
 	{
 		m_core->add_task(std::move(task));
 	}
 
-	void add_task(task_func func)
+	inline void add_task(task_func func)
 	{
 		m_core->add_task(func);
 	}
 
-	bool empty()
+	inline bool empty()
 	{
 		return m_core->empty();
 	}
 
-	void clear()
+	inline void clear()
 	{
 		m_core->clear();
 	}
 
-	void wait(bool clear_tasks)
+	inline void wait(bool clear_tasks)
 	{
 		m_core->wait(clear_tasks);
-	}
-
-	void wait(long max_wait_ms, bool clear_tasks)
-	{
-		m_core->wait(max_wait_ms, clear_tasks);
 	}
 
 private:
