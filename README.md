@@ -1,11 +1,11 @@
-pool_core
+threadpool
 ==========
 
-Basic pool_core implementation. Just include pool.hpp.
+Basic threadpool implementation. Just include pool.hpp.
 
 Example usage:
 
 std::function<void(void)> fn;
 
-threadpool p(10);
-p.add_task(fn);
+threadpool tp(10);
+tp.add_task(fn);
