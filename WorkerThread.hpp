@@ -1,59 +1,56 @@
-#pragma once
+#ifndef THREADPOOL_WORKERTHREAD_H
+#define THREADPOOL_WORKERTHREAD_H
 
 #include <thread>
 #include <chrono>
+#include "ThreadPool.hpp"
 
-namespace threadpool {
-	
-	using namespace std;
-	class ThreadPool;
-
-	template <typename Task>
-	class WorkerThread
+template <typename Task>
+class WorkerThread
+{
+public:
+	WorkerThread<Task>(ThreadPool* pool) :
+		p_pool(pool)
 	{
-	public:
-		WorkerThread(ThreadPool* pool) :
-			p_pool(pool)
-		{
-			//create thread
-			m_thread(run);
-		}
+		//create thread
+		m_thread(std::bind(&WorkerThread::run, this));
+	}
 
-		~WorkerThread() {}
+	~WorkerThread() {}
 
-		void join()
-		{
-			m_thread.join();
-		}
+	void join()
+	{
+		m_thread.join();
+	}
 
-	private:
-		thread m_thread;
-		ThreadPool* p_pool;
-		unique_ptr<Task> p_currentTask;
-		
-		void run()
+private:
+	std::thread m_thread;
+	ThreadPool* p_pool;
+	std::unique_ptr<Task> p_currentTask;
+	
+	void run()
+	{
+		++p_pool->m_threadsPending;
+		while (p_pool->isRunning())
 		{
-			++p_pool->m_threadsPending;
-			while (p_pool->isRunning())
+			if (p_pool->tasksLeft())
 			{
-				if (p_pool->tasksLeft())
-				{
-					p_currentTask = p_pool->getNextTask();
-					
-					if (p_currentTask.get() != nullptr)
-					{
-						--p_pool->m_threadsPending;
-						++p_pool->m_threadsRunning;
-						p_pool->m_tasksCompleted.push((*p_currentTask)());
-						--p_pool->m_threadsRunning;
-						++p_pool->m_threadsPending;
-					}
-				}
+				p_currentTask = p_pool->getNextTask();
 				
-				this_thread::sleep_for(chrono::milliseconds(20));
+				if (p_currentTask.get() != nullptr)
+				{
+					--p_pool->m_threadsPending;
+					++p_pool->m_threadsRunning;
+					p_pool->m_tasksCompleted.push((*p_currentTask)());
+					--p_pool->m_threadsRunning;
+					++p_pool->m_threadsPending;
+				}
 			}
+			
+			std::this_thread::sleep_for(std::chrono::milliseconds(20));
 		}
+	}
 
-	};
+};
 
-}
+#endif //THREADPOOL_WORKERTHREAD_H
