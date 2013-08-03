@@ -33,7 +33,7 @@ public:
 
     void add_task(task_ptr task)
     {
-        if (m_stop_requested)   //if stop is requested, don't add more ;_;
+        if (m_stop_requested)
         {
             return;
         }
@@ -103,11 +103,10 @@ public:
 
         m_stop_requested = true;
 
-        std::for_each(begin(m_threads), end(m_threads),
-            [] (std::shared_ptr<worker_thread<pool_core>> wtp)
-            {
-                wtp->join();
-            });
+        for (auto it = begin(m_threads); it != end(m_threads); ++it)
+        {
+            (*it)->join();
+        }
     }
 
     std::shared_ptr<pool_core> get_ptr()
