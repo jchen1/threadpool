@@ -118,7 +118,7 @@ public:
 private:
 
     std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-    std::queue<task_ptr> m_tasks;
+    std::priority_queue<task_ptr> m_tasks;
 
     std::mutex m_task_mutex;
 
