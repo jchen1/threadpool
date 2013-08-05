@@ -12,7 +12,8 @@ class task_wrapper
 {
 public:
 
-	task_wrapper(task_func function, int priority = 1) : m_function(function), m_priority(priority) {}
+	task_wrapper(task_func const & function, int priority = 1) :
+		m_function(function), m_priority(priority) {}
 
 	void operator() (void) const
 	{
@@ -20,11 +21,6 @@ public:
 		{
 			m_function();
 		}
-	}
-
-	static std::unique_ptr<task_wrapper>  make_task_ptr(task_func function, int priority = 1)
-	{
-		return std::unique_ptr<task_wrapper>(new task_wrapper(function, priority));
 	}
 	
 	bool operator< (const task_wrapper& lhs, const task_wrapper& rhs)
@@ -35,6 +31,11 @@ public:
 	int get_priority()
 	{
 		return m_priority;
+	}
+	
+	static std::unique_ptr<task_wrapper> make_task_ptr(task_func const & function, int priority = 1)
+	{
+		return std::unique_ptr<task_wrapper>(new task_wrapper(function, priority));
 	}
 
 private:
