@@ -50,9 +50,9 @@ public:
         m_task_mutex.unlock();
     }
     
-    void add_task(task_func const & func)
+    void add_task(task_func const & func, priority = 1)
     {
-        task_wrapper task(func);
+        task_wrapper task(func, priority);
         add_task(task);
     }
 
