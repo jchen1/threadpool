@@ -27,7 +27,7 @@ public:
 		return std::unique_ptr<task_wrapper>(new task_wrapper(function, priority));
 	}
 	
-	bool operator() (const task_wrapper& lhs, const task_wrapper& rhs)
+	bool operator< (const task_wrapper& lhs, const task_wrapper& rhs)
 	{
 		return (lhs.get_priority() < rhs.get_priority());
 	}
