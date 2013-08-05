@@ -1,7 +1,7 @@
 threadpool
 ==========
 
-Basic threadpool implementation. Just include pool.hpp.
+Basic threadpool implementation. Just include `pool.hpp`.
 
 Example usage:
 
