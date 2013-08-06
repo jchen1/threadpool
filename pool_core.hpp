@@ -50,7 +50,7 @@ public:
         m_task_mutex.unlock();
     }
     
-    void add_task(task_func const & func, priority = 1)
+    void add_task(task_func const & func, int priority = 1)
     {
         task_wrapper task(func, priority);
         add_task(task);
@@ -63,7 +63,7 @@ public:
         m_task_mutex.lock();
         if (!m_tasks.empty())
         {
-            task = m_tasks.front();
+            task = m_tasks.top();
             m_tasks.pop();
             m_task_mutex.unlock();
             task();

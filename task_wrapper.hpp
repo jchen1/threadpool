@@ -23,19 +23,14 @@ public:
 		}
 	}
 	
-	bool operator< (const task_wrapper& lhs, const task_wrapper& rhs)
+	bool operator() (const task_wrapper& lhs, const task_wrapper& rhs)
 	{
 		return (lhs.get_priority() < rhs.get_priority());
 	}
 	
-	int get_priority()
+	int get_priority() const
 	{
 		return m_priority;
-	}
-	
-	static std::unique_ptr<task_wrapper> make_task_ptr(task_func const & function, int priority = 1)
-	{
-		return std::unique_ptr<task_wrapper>(new task_wrapper(function, priority));
 	}
 
 private:

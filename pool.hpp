@@ -15,7 +15,7 @@ public:
 		m_core->add_task(task);
 	}
 
-	inline void add_task(task_func const & func, priority = 1)
+	inline void add_task(task_func const & func, int priority = 1)
 	{
 		m_core->add_task(func, priority);
 	}
