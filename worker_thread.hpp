@@ -15,7 +15,7 @@ class worker_thread
 public:
 
     typedef std::shared_ptr<worker_thread<pool_core>> worker_thread_ptr;
-    
+
     worker_thread(std::shared_ptr<pool_core> pool) : m_pool(pool) {}
 
     ~worker_thread()
@@ -45,9 +45,7 @@ private:
 
     void run()
     {
-        ++m_pool->m_threads_running;
         while (m_pool && m_pool->run_task());
-        --m_pool->m_threads_running;
         --m_pool->m_threads_created;
     }
 

@@ -29,7 +29,7 @@ public:
 
     ~pool_core()
     {
-        wait(-1);
+        wait(false);
     }
     
     void add_task(task_wrapper const & task)
