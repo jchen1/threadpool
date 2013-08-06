@@ -39,8 +39,6 @@ private:
 	int m_priority;
 };
 
-typedef std::unique_ptr<task_wrapper> task_ptr;
-
 }
 
 #endif //THREADPOOL_TASKWRAPPER_H
