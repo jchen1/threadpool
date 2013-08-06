@@ -74,12 +74,10 @@ public:
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
-        task_func task;
-
         m_task_mutex.lock();
         if (!m_tasks.empty())
         {
-            task = m_tasks.top();
+            task_func task = m_tasks.top();
             m_tasks.pop();
             m_task_mutex.unlock();
             --m_threads_running;
@@ -96,9 +94,8 @@ public:
 
     bool empty()
     {
-        bool ret;
         m_task_mutex.lock();
-        ret = m_tasks.empty();
+        bool ret = m_tasks.empty();
         m_task_mutex.unlock();
         return ret;
     }
@@ -122,9 +119,9 @@ public:
 
         m_stop_requested = true;
 
-        for (auto it = begin(m_threads); it != end(m_threads); ++it)
+        for (auto thread : m_threads)
         {
-            (*it)->join();
+            thread->join();
         }
     }
 
@@ -145,9 +142,9 @@ private:
 
     volatile int m_threads_running;
     volatile int m_threads_created;
-    volatile bool m_stop_requested;
     volatile bool m_pause_requested;
-
+    volatile bool m_stop_requested;
+    
     friend class worker_thread<pool_core>;
 
 };
