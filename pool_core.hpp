@@ -67,11 +67,11 @@ public:
         m_pause_requested = false;
     }
 
-    bool run_task()
+    bool run_task(int &idle_ms)
     {
         while (m_pause_requested)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
         m_task_mutex.lock();
@@ -83,13 +83,17 @@ public:
             --m_threads_running;
             task();
             ++m_threads_running;
+
+            idle_ms = 0;
         }
         else
         {
             m_task_mutex.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            ++idle_ms;
         }
 
-        return (!empty());
+        return (!empty() && idle_ms < 1000);
     }
 
     bool empty()
