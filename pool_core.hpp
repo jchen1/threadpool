@@ -30,29 +30,30 @@ public:
     {
         wait(-1);
     }
-
-    void add_task(task_ptr task)
+    
+    void add_task(task_wrapper const & task)
     {
         if (m_stop_requested)
         {
             return;
         }
-
+        
         m_task_mutex.lock();
         if (m_threads_created == m_threads_running &&
             m_threads_created != m_max_threads)
         {
             m_threads.emplace_back(
                 worker_thread<pool_core>::create_and_attach(get_ptr()));
-            ++m_threads_created;
+            ++m_threads_created;        
         }
-        m_tasks.push(std::move(task));
+        m_tasks.push(task);
         m_task_mutex.unlock();
     }
-
-    void add_task(task_func func)
+    
+    void add_task(task_func const & func, int priority = 1)
     {
-        add_task(task_wrapper::make_task_ptr(func));
+        task_wrapper task(func, priority);
+        add_task(task);
     }
 
     bool run_task()
@@ -62,7 +63,7 @@ public:
         m_task_mutex.lock();
         if (!m_tasks.empty())
         {
-            task = *(std::move(m_tasks.front()));
+            task = m_tasks.top();
             m_tasks.pop();
             m_task_mutex.unlock();
             task();
@@ -118,7 +119,7 @@ public:
 private:
 
     std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-    std::queue<task_ptr> m_tasks;
+    std::priority_queue<task_wrapper> m_tasks;
 
     std::mutex m_task_mutex;
 

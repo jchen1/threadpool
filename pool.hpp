@@ -10,14 +10,14 @@ class threadpool
 public:
 	threadpool(int max_threads) : m_core(new pool_core(max_threads)) {}
 
-	inline void add_task(task_ptr task)
+	inline void add_task(task_wrapper const & task)
 	{
-		m_core->add_task(std::move(task));
+		m_core->add_task(task);
 	}
 
-	inline void add_task(task_func func)
+	inline void add_task(task_func const & func, int priority = 1)
 	{
-		m_core->add_task(func);
+		m_core->add_task(func, priority);
 	}
 
 	inline bool empty()
