@@ -69,6 +69,11 @@ public:
 
     bool run_task()
     {
+        while (m_pause_requested)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
         task_func task;
 
         m_task_mutex.lock();
@@ -77,11 +82,9 @@ public:
             task = m_tasks.top();
             m_tasks.pop();
             m_task_mutex.unlock();
-            while (m_pause_requested)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
+            --m_threads_running;
             task();
+            ++m_threads_running;
         }
         else
         {
