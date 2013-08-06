@@ -8,7 +8,8 @@ namespace threadpool {
 class threadpool
 {
 public:
-	threadpool(int max_threads) : m_core(new pool_core(max_threads)) {}
+	threadpool(int max_threads, bool start_paused) :
+		m_core(new pool_core(max_threads, start_paused)) {}
 
 	inline void add_task(task_wrapper const & task)
 	{
@@ -18,6 +19,16 @@ public:
 	inline void add_task(task_func const & func, int priority = 1)
 	{
 		m_core->add_task(func, priority);
+	}
+
+	inline void pause()
+	{
+		m_core->pause();
+	}
+
+	inline void unpause()
+	{
+		m_core->unpause();
 	}
 
 	inline bool empty()

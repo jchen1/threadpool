@@ -17,12 +17,13 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
 public:
 
-    pool_core(int max_threads) :
+    pool_core(int max_threads, bool start_paused = false) :
         m_max_threads(max_threads),
         m_threads_running(0),
         m_threads_created(0),
         m_stop_requested(false)
     {
+        m_pause_requested = start_paused;
         m_threads.reserve(m_max_threads);
     }
 
@@ -56,6 +57,16 @@ public:
         add_task(task);
     }
 
+    void pause()
+    {
+        m_pause_requested = true;
+    }
+
+    void unpause()
+    {
+        m_pause_requested = false;
+    }
+
     bool run_task()
     {
         task_func task;
@@ -66,6 +77,10 @@ public:
             task = m_tasks.top();
             m_tasks.pop();
             m_task_mutex.unlock();
+            while (m_pause_requested)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
             task();
         }
         else
@@ -128,6 +143,7 @@ private:
     volatile int m_threads_running;
     volatile int m_threads_created;
     volatile bool m_stop_requested;
+    volatile bool m_pause_requested;
 
     friend class worker_thread<pool_core>;
 
