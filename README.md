@@ -33,8 +33,11 @@ int main(int argc, char** argv)
     
     for (int i = 0; i < max_num; i++)
     {
-        tp.add_task(std::bind(func, i));
+        tp.add_task(std::bind(func, i), 1);
     }
+
+    tp.add_task(std::bind(func, 50), 5);
+    tp.add_task(std::bind(func, 100), 100); 	//executed before previous line
     
     tp.wait();
 }
