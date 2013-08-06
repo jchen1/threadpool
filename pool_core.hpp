@@ -80,9 +80,9 @@ public:
             task_func task = m_tasks.top();
             m_tasks.pop();
             m_task_mutex.unlock();
-            --m_threads_running;
-            task();
             ++m_threads_running;
+            task();
+            --m_threads_running;
 
             idle_ms = 0;
         }
@@ -93,7 +93,8 @@ public:
             ++idle_ms;
         }
 
-        return (!empty() && idle_ms < 1000);
+        return (!empty() && idle_ms < 1000 &&
+            m_threads_created <= m_max_threads);
     }
 
     bool empty()
@@ -127,6 +128,26 @@ public:
         {
             thread->join();
         }
+    }
+
+    int get_threads_running() const
+    {
+        return m_threads_running;
+    }
+
+    int get_threads_created() const
+    {
+        return m_threads_created;
+    }
+
+    void set_max_threads(int max_threads)
+    {
+        m_max_threads = max_threads;
+    }
+
+    int get_max_threads() const
+    {
+        return m_max_threads;
     }
 
     std::shared_ptr<pool_core> get_ptr()

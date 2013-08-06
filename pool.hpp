@@ -46,6 +46,26 @@ public:
 		m_core->wait(clear_tasks);
 	}
 
+	inline int get_threads_running() const
+    {
+        return m_core->get_threads_running();
+    }
+
+    inline int get_threads_created() const
+    {
+        return m_core->get_threads_created();
+    }
+
+    inline void set_max_threads(int max_threads)
+    {
+        m_core->set_max_threads(max_threads);
+    }
+
+    inline int get_max_threads() const
+    {
+    	return m_core->get_max_threads();
+    }
+
 private:
 	std::shared_ptr<pool_core> m_core;
 };
