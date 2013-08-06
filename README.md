@@ -29,15 +29,19 @@ int main(int argc, char** argv)
     int max_num = atoi(argv[1]);
     int num_threads = atoi(argv[2]);
     
-    threadpool::threadpool tp(num_threads);
+    threadpool::threadpool tp(num_threads, false);
     
     for (int i = 0; i < max_num; i++)
     {
         tp.add_task(std::bind(func, i), 1);
     }
+    
+    tp->pause();
 
     tp.add_task(std::bind(func, 50), 5);
     tp.add_task(std::bind(func, 100), 100); 	//executed before previous line
+    
+    tp->unpause();
     
     tp.wait();
 }
