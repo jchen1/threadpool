@@ -22,8 +22,8 @@ public:
         m_threads_created(0),
         m_stop_requested(false)
     {
-        m_max_threads = (max_threads ? max_threads :
-                         std::thread::hardware_concurrency());
+        m_max_threads = std::max(max_threads,
+            std::thread::hardware_concurrency());
         m_pause_requested = start_paused;
         m_threads.reserve(m_max_threads);
     }
