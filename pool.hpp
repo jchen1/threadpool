@@ -8,7 +8,7 @@ namespace threadpool {
 class threadpool
 {
 public:
-	threadpool(int max_threads, bool start_paused) :
+	threadpool(int max_threads = 0, bool start_paused = false) :
 		m_core(new pool_core(max_threads, start_paused)) {}
 
 	inline void add_task(task_wrapper const & task)
