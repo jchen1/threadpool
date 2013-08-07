@@ -17,12 +17,13 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
 public:
 
-    pool_core(int max_threads, bool start_paused = false) :
-        m_max_threads(max_threads),
+    pool_core(int max_threads = 0, bool start_paused = false) :
         m_threads_running(0),
         m_threads_created(0),
         m_stop_requested(false)
     {
+        m_max_threads = (max_threads ? max_threads :
+                         std::thread::hardware_concurrency());
         m_pause_requested = start_paused;
         m_threads.reserve(m_max_threads);
     }
