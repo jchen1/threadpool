@@ -140,11 +140,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     return m_max_threads;
   }
 
-  std::shared_ptr<pool_core> get_ptr()
-  {
-    return shared_from_this();
-  }
-
  private: 
   void add_task(task_wrapper const & task)
   {
@@ -162,7 +157,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       m_threads_created != m_max_threads)
     {
       m_threads.emplace_back(
-        worker_thread<pool_core>::create_and_attach(get_ptr()));
+        worker_thread<pool_core>::create_and_attach(shared_from_this()));
       ++m_threads_created;
     }
     m_tasks.push(task);
