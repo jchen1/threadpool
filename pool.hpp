@@ -11,7 +11,8 @@ public:
   threadpool(int max_threads = 0, bool start_paused = false) :
     m_core(new pool_core(max_threads, start_paused)) {}
 
-  inline void add_task(std::function<void(void)> const & func, int priority = 1)
+  inline void add_task(std::function<void(void)> const & func,
+                      unsigned int priority = 1)
   {
     m_core->add_task(func, priority);
   }

@@ -50,7 +50,7 @@ public:
     m_pause_requested = false;
   }
 
-  bool run_task(int &idle_ms)
+  bool run_task(unsigned int &idle_ms)
   {
     while (m_pause_requested)
     {
