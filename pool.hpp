@@ -8,56 +8,102 @@ namespace threadpool {
 class threadpool
 {
 public:
+
+  /* 
+   * Creates a new thread pool, with max_threads threads allowed. Starts paused
+   * if start_paused = true. Default values are max_threads = 
+   * std::thread::hardware_concurrency(), which should return the number of
+   * physical cores the CPU has, and start_paused = false.
+   */
   threadpool(unsigned int max_threads = std::thread::hardware_concurrency(),
             bool start_paused = false) :
     m_core(new pool_core(max_threads, start_paused)) {}
 
+  /*
+   * Adds a new task to the task queue, with an optional priority. The task
+   * must be a zero-argument function object with no return value. For a
+   * function that takes arguments, use std::bind() on the function before
+   * adding it to the task queue.
+   */
   inline void add_task(std::function<void(void)> const & func,
                       unsigned int priority = 0)
   {
     m_core->add_task(func, priority);
   }
 
+  /*
+   * Pauses the thread pool - all currently executing tasks will finish, but any
+   * remaining tasks in the task queue will not be executed until unpause() is
+   * called. Tasks may still be added to the queue when the pool is paused.
+   */
   inline void pause()
   {
     m_core->pause();
   }
 
+  /*
+   * Unpauses the thread pool.
+   */
   inline void unpause()
   {
     m_core->unpause();
   }
 
+  /*
+   * Returns true if the task queue is empty. Note that worker threads may be
+   * running, even if empty() returns true.
+   */
   inline bool empty()
   {
     return m_core->empty();
   }
 
+  /* 
+   * Clears the task queue. Does not stop any running tasks.
+   */
   inline void clear()
   {
     m_core->clear();
   }
 
+  /*
+   * Waits for all threads to finish executing. wait(true) will clear any
+   * remaining tasks in the task queue, thus exiting once any running workers
+   * finish. wait(false), on the other hand, will wait until the task queue
+   * is empty and the running workers finish.
+   */
   inline void wait(bool clear_tasks)
   {
     m_core->wait(clear_tasks);
   }
 
+  /*
+   * Returns how many worker threads are currently executing a task.
+   */
   inline unsigned int get_threads_running() const
   {
     return m_core->get_threads_running();
   }
 
+  /*
+   * Returns how many worker threads have been created.
+   */
   inline unsigned int get_threads_created() const
   {
     return m_core->get_threads_created();
   }
 
+  /*
+   * Sets the maximum number of worker threads the thread pool can spawn.
+   */
   inline void set_max_threads(unsigned int max_threads)
   {
     m_core->set_max_threads(max_threads);
   }
 
+  /*
+   * Returns the maximum number of worker threads the pool can spawn.
+   */
   inline unsigned int get_max_threads() const
   {
     return m_core->get_max_threads();
