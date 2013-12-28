@@ -12,8 +12,7 @@ namespace threadpool {
 template <class pool_core>
 class worker_thread
 {
-public:
-
+ public:
   typedef std::shared_ptr<worker_thread<pool_core>> worker_thread_ptr;
 
   worker_thread(std::shared_ptr<pool_core> pool) : m_pool(pool) {}
@@ -41,8 +40,7 @@ public:
   }
 
 
-private:
-
+ private:
   void run()
   {
     unsigned int idle_ms(0);

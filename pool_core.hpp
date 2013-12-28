@@ -13,16 +13,14 @@ namespace threadpool {
 
 class pool_core : public std::enable_shared_from_this<pool_core>
 {
-
-public:
-
+ public:
   static const unsigned int MAX_IDLE_MS_BEFORE_DESPAWN = 1000;
 
-  pool_core(unsigned int max_threads, bool start_paused) :
-    m_threads_running(0),
-    m_threads_created(0),
-    m_stop_requested(false),
-    m_max_threads(max_threads)
+  pool_core(unsigned int max_threads, bool start_paused)
+    : m_threads_running(0),
+      m_threads_created(0),
+      m_stop_requested(false),
+      m_max_threads(max_threads)
   {
     m_threads.reserve(m_max_threads);
     if (start_paused)
@@ -60,7 +58,7 @@ public:
   }
 
   bool run_task(unsigned int &idle_ms)
-  {
+  {  
     m_pause_mutex.lock();
     m_pause_mutex.unlock();
 
@@ -118,6 +116,8 @@ public:
     {
       thread->join();
     }
+
+    m_stop_requested = false;
   }
 
   unsigned int get_threads_running() const
@@ -145,22 +145,7 @@ public:
     return shared_from_this();
   }
 
-
-private:
-
-  std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-  std::priority_queue<task_wrapper> m_tasks;
-
-  std::mutex m_task_mutex, m_pause_mutex;
-
-  unsigned int m_max_threads;
-
-  std::atomic_uint m_threads_running;
-  std::atomic_uint m_threads_created;
-  std::atomic_bool m_stop_requested;
-  
-  friend class worker_thread<pool_core>;
-
+ private: 
   void add_task(task_wrapper const & task)
   {
     if (m_stop_requested.load())
@@ -184,6 +169,18 @@ private:
     m_task_mutex.unlock();
   }
 
+  std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
+  std::priority_queue<task_wrapper> m_tasks;
+
+  std::mutex m_task_mutex, m_pause_mutex;
+
+  unsigned int m_max_threads;
+
+  std::atomic_uint m_threads_running;
+  std::atomic_uint m_threads_created;
+  std::atomic_bool m_stop_requested;
+
+  friend class worker_thread<pool_core>;
 };
 
 }

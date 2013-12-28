@@ -8,11 +8,10 @@ namespace threadpool {
 
 class task_wrapper
 {
-public:
-
+ public:
   task_wrapper(std::function<void(void)> const & function,
-              unsigned int priority) :
-    m_function(function), m_priority(priority) {}
+               unsigned int priority)
+    : m_function(function), m_priority(priority) {}
 
   void operator() (void) const
   {
@@ -32,8 +31,7 @@ public:
     return m_priority;
   }
 
-private:
-
+ private:
   std::function<void(void)> m_function;
   const unsigned int m_priority;
 };

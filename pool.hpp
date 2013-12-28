@@ -16,8 +16,7 @@ namespace threadpool {
  */
 class threadpool
 {
-public:
-
+ public:
   /* 
    * Creates a new thread pool, with max_threads threads allowed. Starts paused
    * if start_paused = true. Default values are max_threads = 
@@ -25,8 +24,8 @@ public:
    * physical cores the CPU has, and start_paused = false.
    */
   threadpool(unsigned int max_threads = std::thread::hardware_concurrency(),
-            bool start_paused = false) :
-    m_core(new pool_core(max_threads, start_paused)) {}
+             bool start_paused = false)
+    : m_core(new pool_core(max_threads, start_paused)) {}
 
   /*
    * Adds a new task to the task queue, with an optional priority. The task
@@ -35,7 +34,7 @@ public:
    * adding it to the task queue.
    */
   inline void add_task(std::function<void(void)> const & func,
-                      unsigned int priority = 0)
+                       unsigned int priority = 0)
   {
     m_core->add_task(func, priority);
   }
@@ -118,7 +117,7 @@ public:
     return m_core->get_max_threads();
   }
 
-private:
+ private:
   std::shared_ptr<pool_core> m_core;
 };
 
