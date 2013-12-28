@@ -6,7 +6,13 @@
 namespace threadpool {
 
 /*
- * Thread pool that does not need a master thread.
+ * Thread pool that does not need a master thread to manage load. Tasks must
+ * have no return value or arguments, of the form void task(void). Tasks are
+ * added to a max-priority queue. Threads are created only when there are no
+ * idle threads available and the total thread count does not exceed the
+ * maximum thread count. Threads are despawned if they are idle for more than
+ * a specified time (MAX_IDLE_MS_BEFORE_DESPAWN in pool_core.hpp, defaulted
+ * to 1000 ms).
  */
 class threadpool
 {

@@ -16,6 +16,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
 public:
 
+  static const unsigned int MAX_IDLE_MS_BEFORE_DESPAWN = 1000;
+
   pool_core(unsigned int max_threads, bool start_paused) :
     m_threads_running(0),
     m_threads_created(0),
@@ -81,7 +83,7 @@ public:
       ++idle_ms;
     }
 
-    return (!empty() && idle_ms < 1000 &&
+    return (!empty() && idle_ms < MAX_IDLE_MS_BEFORE_DESPAWN &&
       m_threads_created <= m_max_threads);
   }
 
