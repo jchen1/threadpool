@@ -17,8 +17,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
 public:
 
-  pool_core(unsigned int max_threads = std::thread::hardware_concurrency(),
-            bool start_paused = false) :
+  pool_core(unsigned int max_threads, bool start_paused) :
     m_threads_running(0),
     m_threads_created(0),
     m_stop_requested(false)
@@ -36,8 +35,7 @@ public:
     wait(false);
   }
   
-  void add_task(std::function<void(void)> const & func,
-                unsigned int priority = 1)
+  void add_task(std::function<void(void)> const & func, unsigned int priority)
   {
     task_wrapper task(func, priority);
     add_task(task);
@@ -169,7 +167,7 @@ private:
     {
       m_threads.emplace_back(
         worker_thread<pool_core>::create_and_attach(get_ptr()));
-      ++m_threads_created;        
+      ++m_threads_created;
     }
     m_tasks.push(task);
     m_task_mutex.unlock();

@@ -13,7 +13,7 @@ public:
     m_core(new pool_core(max_threads, start_paused)) {}
 
   inline void add_task(std::function<void(void)> const & func,
-                      unsigned int priority = 1)
+                      unsigned int priority = 0)
   {
     m_core->add_task(func, priority);
   }
@@ -43,22 +43,22 @@ public:
     m_core->wait(clear_tasks);
   }
 
-  inline int get_threads_running() const
+  inline unsigned int get_threads_running() const
   {
     return m_core->get_threads_running();
   }
 
-  inline int get_threads_created() const
+  inline unsigned int get_threads_created() const
   {
     return m_core->get_threads_created();
   }
 
-  inline void set_max_threads(int max_threads)
+  inline void set_max_threads(unsigned int max_threads)
   {
     m_core->set_max_threads(max_threads);
   }
 
-  inline int get_max_threads() const
+  inline unsigned int get_max_threads() const
   {
     return m_core->get_max_threads();
   }

@@ -11,7 +11,7 @@ class task_wrapper
 public:
 
   task_wrapper(std::function<void(void)> const & function,
-              unsigned int priority = 1) :
+              unsigned int priority) :
     m_function(function), m_priority(priority) {}
 
   void operator() (void) const
@@ -35,7 +35,7 @@ public:
 private:
 
   std::function<void(void)> m_function;
-  unsigned int m_priority;
+  const unsigned int m_priority;
 };
 
 }
