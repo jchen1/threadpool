@@ -24,8 +24,11 @@ public:
     m_stop_requested(false)
   {
     m_max_threads = max_threads;
-    m_pause_requested = start_paused;
     m_threads.reserve(m_max_threads);
+    if (start_paused)
+    {
+      pause();
+    }
   }
 
   ~pool_core()
@@ -42,20 +45,19 @@ public:
 
   void pause()
   {
-    m_pause_requested = true;
+    m_pause_mutex.unlock();
+    m_pause_mutex.lock();
   }
 
   void unpause()
   {
-    m_pause_requested = false;
+    m_pause_mutex.unlock();
   }
 
   bool run_task(unsigned int &idle_ms)
   {
-    while (m_pause_requested)
-    {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
+    m_pause_mutex.lock();
+    m_pause_mutex.unlock();
 
     m_task_mutex.lock();
     if (!m_tasks.empty())
@@ -113,17 +115,17 @@ public:
     }
   }
 
-  int get_threads_running() const
+  unsigned int get_threads_running() const
   {
-    return m_threads_running;
+    return m_threads_running.load();
   }
 
-  int get_threads_created() const
+  unsigned int get_threads_created() const
   {
-    return m_threads_created;
+    return m_threads_created.load();
   }
 
-  void set_max_threads(int max_threads)
+  void set_max_threads(unsigned int max_threads)
   {
     m_max_threads = max_threads;
   }
@@ -144,14 +146,13 @@ private:
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
   std::priority_queue<task_wrapper> m_tasks;
 
-  std::mutex m_task_mutex;
+  std::mutex m_task_mutex, m_pause_mutex;
 
   unsigned int m_max_threads;
 
-  volatile unsigned int m_threads_running;
-  volatile unsigned int m_threads_created;
-  volatile bool m_pause_requested;
-  volatile bool m_stop_requested;
+  std::atomic_uint m_threads_running;
+  std::atomic_uint m_threads_created;
+  std::atomic_bool m_stop_requested;
   
   friend class worker_thread<pool_core>;
 
