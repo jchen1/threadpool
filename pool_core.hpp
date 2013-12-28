@@ -17,161 +17,162 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
 public:
 
-    pool_core(int max_threads = 0, bool start_paused = false) :
-        m_threads_running(0),
-        m_threads_created(0),
-        m_stop_requested(false)
+  pool_core(unsigned int max_threads = 0, bool start_paused = false) :
+    m_threads_running(0),
+    m_threads_created(0),
+    m_stop_requested(false)
+  {
+    m_max_threads = std::max(max_threads,
+      std::thread::hardware_concurrency());
+    m_pause_requested = start_paused;
+    m_threads.reserve(m_max_threads);
+  }
+
+  ~pool_core()
+  {
+    wait(false);
+  }
+  
+  void add_task(std::function<void(void)> const & func,
+                unsigned int priority = 1)
+  {
+    task_wrapper task(func, priority);
+    add_task(task);
+  }
+
+  void pause()
+  {
+    m_pause_requested = true;
+  }
+
+  void unpause()
+  {
+    m_pause_requested = false;
+  }
+
+  bool run_task(int &idle_ms)
+  {
+    while (m_pause_requested)
     {
-        m_max_threads = std::max(max_threads,
-            std::thread::hardware_concurrency());
-        m_pause_requested = start_paused;
-        m_threads.reserve(m_max_threads);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
-    ~pool_core()
+    m_task_mutex.lock();
+    if (!m_tasks.empty())
     {
-        wait(false);
+      auto task = m_tasks.top();
+      m_tasks.pop();
+      m_task_mutex.unlock();
+      ++m_threads_running;
+      task();
+      --m_threads_running;
+
+      idle_ms = 0;
     }
-    
-    void add_task(task_wrapper const & task)
+    else
     {
-        if (m_stop_requested)
-        {
-            return;
-        }
-        
-        m_task_mutex.lock();
-        if (m_threads_created == m_threads_running &&
-            m_threads_created != m_max_threads)
-        {
-            m_threads.emplace_back(
-                worker_thread<pool_core>::create_and_attach(get_ptr()));
-            ++m_threads_created;        
-        }
-        m_tasks.push(task);
-        m_task_mutex.unlock();
-    }
-    
-    void add_task(task_func const & func, int priority = 1)
-    {
-        task_wrapper task(func, priority);
-        add_task(task);
+      m_task_mutex.unlock();
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      ++idle_ms;
     }
 
-    void pause()
+    return (!empty() && idle_ms < 1000 &&
+      m_threads_created <= m_max_threads);
+  }
+
+  bool empty()
+  {
+    m_task_mutex.lock();
+    bool ret = m_tasks.empty();
+    m_task_mutex.unlock();
+    return ret;
+  }
+
+  void clear()
+  {
+    m_task_mutex.lock();
+    while (!m_tasks.empty())
     {
-        m_pause_requested = true;
+      m_tasks.pop();
+    }
+    m_task_mutex.unlock();
+  }
+
+  void wait(bool clear_tasks)
+  {
+    if (clear_tasks)
+    {
+      clear();
     }
 
-    void unpause()
+    m_stop_requested = true;
+
+    for (auto thread : m_threads)
     {
-        m_pause_requested = false;
+      thread->join();
     }
+  }
 
-    bool run_task(int &idle_ms)
-    {
-        while (m_pause_requested)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+  int get_threads_running() const
+  {
+    return m_threads_running;
+  }
 
-        m_task_mutex.lock();
-        if (!m_tasks.empty())
-        {
-            task_func task = m_tasks.top();
-            m_tasks.pop();
-            m_task_mutex.unlock();
-            ++m_threads_running;
-            task();
-            --m_threads_running;
+  int get_threads_created() const
+  {
+    return m_threads_created;
+  }
 
-            idle_ms = 0;
-        }
-        else
-        {
-            m_task_mutex.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            ++idle_ms;
-        }
+  void set_max_threads(int max_threads)
+  {
+    m_max_threads = max_threads;
+  }
 
-        return (!empty() && idle_ms < 1000 &&
-            m_threads_created <= m_max_threads);
-    }
+  int get_max_threads() const
+  {
+    return m_max_threads;
+  }
 
-    bool empty()
-    {
-        m_task_mutex.lock();
-        bool ret = m_tasks.empty();
-        m_task_mutex.unlock();
-        return ret;
-    }
-
-    void clear()
-    {
-        m_task_mutex.lock();
-        while (!m_tasks.empty())
-        {
-            m_tasks.pop();
-        }
-        m_task_mutex.unlock();
-    }
-
-    void wait(bool clear_tasks)
-    {
-        if (clear_tasks)
-        {
-            clear();
-        }
-
-        m_stop_requested = true;
-
-        for (auto thread : m_threads)
-        {
-            thread->join();
-        }
-    }
-
-    int get_threads_running() const
-    {
-        return m_threads_running;
-    }
-
-    int get_threads_created() const
-    {
-        return m_threads_created;
-    }
-
-    void set_max_threads(int max_threads)
-    {
-        m_max_threads = max_threads;
-    }
-
-    int get_max_threads() const
-    {
-        return m_max_threads;
-    }
-
-    std::shared_ptr<pool_core> get_ptr()
-    {
-        return shared_from_this();
-    }
+  std::shared_ptr<pool_core> get_ptr()
+  {
+    return shared_from_this();
+  }
 
 
 private:
 
-    std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-    std::priority_queue<task_wrapper> m_tasks;
+  std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
+  std::priority_queue<task_wrapper> m_tasks;
 
-    std::mutex m_task_mutex;
+  std::mutex m_task_mutex;
 
-    int m_max_threads;
+  unsigned int m_max_threads;
 
-    volatile int m_threads_running;
-    volatile int m_threads_created;
-    volatile bool m_pause_requested;
-    volatile bool m_stop_requested;
+  volatile unsigned int m_threads_running;
+  volatile unsigned int m_threads_created;
+  volatile bool m_pause_requested;
+  volatile bool m_stop_requested;
+  
+  friend class worker_thread<pool_core>;
+
+  void add_task(task_wrapper const & task)
+  {
+    if (m_stop_requested)
+    {
+      return;
+    }
     
-    friend class worker_thread<pool_core>;
+    m_task_mutex.lock();
+    if (m_threads_created == m_threads_running &&
+      m_threads_created != m_max_threads)
+    {
+      m_threads.emplace_back(
+        worker_thread<pool_core>::create_and_attach(get_ptr()));
+      ++m_threads_created;        
+    }
+    m_tasks.push(task);
+    m_task_mutex.unlock();
+  }
 
 };
 
