@@ -2,7 +2,6 @@
 #define THREADPOOL_POOLCORE_H
 
 #include <algorithm>
-#include <functional>
 #include <mutex>
 #include <queue>
 #include <vector>
@@ -20,9 +19,9 @@ public:
   pool_core(unsigned int max_threads, bool start_paused) :
     m_threads_running(0),
     m_threads_created(0),
-    m_stop_requested(false)
+    m_stop_requested(false),
+    m_max_threads(max_threads)
   {
-    m_max_threads = max_threads;
     m_threads.reserve(m_max_threads);
     if (start_paused)
     {
@@ -43,6 +42,12 @@ public:
 
   void pause()
   {
+    /*
+     * First unlocks the pause mutex before locking it, ensuring that if the
+     * current thread already owns the lock (i.e. pause() has been called prior
+     * to the current call without a corresponding unpause()), no deadlock will
+     * occur.
+     */
     m_pause_mutex.unlock();
     m_pause_mutex.lock();
   }
@@ -162,6 +167,10 @@ private:
     }
     
     m_task_mutex.lock();
+    /*
+     * If all created threads are executing tasks and we have not spawned the
+     * maximum number of allowed threads, create a new thread.
+     */
     if (m_threads_created == m_threads_running &&
       m_threads_created != m_max_threads)
     {

@@ -5,6 +5,9 @@
 
 namespace threadpool {
 
+/*
+ * Thread pool that does not need a master thread.
+ */
 class threadpool
 {
 public:

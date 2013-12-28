@@ -45,7 +45,7 @@ private:
 
   void run()
   {
-    unsigned int idle_ms = 0;
+    unsigned int idle_ms(0);
     while (m_pool && m_pool->run_task(idle_ms));
     --m_pool->m_threads_created;
   }
