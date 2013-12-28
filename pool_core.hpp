@@ -158,7 +158,7 @@ private:
 
   void add_task(task_wrapper const & task)
   {
-    if (m_stop_requested)
+    if (m_stop_requested.load())
     {
       return;
     }
