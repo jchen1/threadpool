@@ -8,7 +8,8 @@ namespace threadpool {
 class threadpool
 {
 public:
-  threadpool(int max_threads = 0, bool start_paused = false) :
+  threadpool(unsigned int max_threads = std::thread::hardware_concurrency(),
+            bool start_paused = false) :
     m_core(new pool_core(max_threads, start_paused)) {}
 
   inline void add_task(std::function<void(void)> const & func,
