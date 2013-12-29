@@ -14,7 +14,7 @@ namespace threadpool {
  * a specified time (MAX_IDLE_MS_BEFORE_DESPAWN in pool_core.hpp, defaulted
  * to 1000 ms).
  */
-class threadpool
+class pool
 {
  public:
   /* 
@@ -23,7 +23,7 @@ class threadpool
    * std::thread::hardware_concurrency(), which should return the number of
    * physical cores the CPU has, and start_paused = false.
    */
-  threadpool(unsigned int max_threads = std::thread::hardware_concurrency(),
+  pool(unsigned int max_threads = std::thread::hardware_concurrency(),
              bool start_paused = false)
     : m_core(new pool_core(max_threads, start_paused)) {}
 

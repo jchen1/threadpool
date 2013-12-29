@@ -29,7 +29,7 @@ int main(int argc, char** argv)
     int max_num = atoi(argv[1]);
     int num_threads = atoi(argv[2]);
     
-    threadpool::threadpool tp(num_threads, false);
+    threadpool::pool tp(num_threads, false);
     
     for (int i = 0; i < max_num; i++)
     {
