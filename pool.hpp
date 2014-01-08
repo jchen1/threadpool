@@ -80,7 +80,7 @@ class pool
    * finish. wait(false), on the other hand, will wait until the task queue
    * is empty and the running workers finish.
    */
-  inline void wait(bool clear_tasks)
+  inline void wait(bool clear_tasks = false)
   {
     m_core->wait(clear_tasks);
   }
