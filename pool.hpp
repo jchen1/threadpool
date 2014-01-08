@@ -6,8 +6,9 @@
 namespace threadpool {
 
 /*
- * Thread pool that does not need a master thread to manage load. Tasks must
- * have no return value or arguments, of the form void task(void). Tasks are
+ * Thread pool that does not need a master thread to manage load. A task is of
+ * the form std::function<T(void)>, and the add_task() function will return a
+ * std::future<T> which will contain the return value of the function. Tasks are
  * added to a max-priority queue. Threads are created only when there are no
  * idle threads available and the total thread count does not exceed the
  * maximum thread count. Threads are despawned if they are idle for more than
@@ -29,12 +30,19 @@ class pool
 
   /*
    * Adds a new task to the task queue, with an optional priority. The task
-   * must be a zero-argument function object with no return value. For a
-   * function that takes arguments, use std::bind() on the function before
-   * adding it to the task queue.
+   * must be a zero-argument function object. For a function that takes
+   * arguments, use std::bind() on the function before adding it to the task
+   * queue. Returns a future for the eventual return value of the function.
    */
-  inline void add_task(std::function<void(void)> const & func,
+  template <class T>
+  inline std::future<T> add_task(std::function<T(void)> const & func,
                        unsigned int priority = 0)
+  {
+    return m_core->add_task(func, priority);
+  }
+
+  inline void add_task(std::function<void(void)> const & func,
+                unsigned int priority = 0)
   {
     m_core->add_task(func, priority);
   }

@@ -1,12 +1,14 @@
 #ifndef THREADPOOL_WORKERTHREAD_H
 #define THREADPOOL_WORKERTHREAD_H
 
-#include <functional>
-#include <memory>
 #include <thread>
 
 namespace threadpool {
 
+/*
+ * worker_thread is templated to avoid cyclical includes - otherwise,
+ * worker_thread.hpp would have to include pool_core.hpp and vice versa.
+ */
 template <class pool_core>
 class worker_thread
 {
