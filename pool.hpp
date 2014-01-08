@@ -41,6 +41,12 @@ class pool
     return m_core->add_task(func, priority);
   }
 
+  inline void add_task(std::function<void(void)> const & func,
+                unsigned int priority = 0)
+  {
+    return m_core->add_task(func, priority);
+  }
+
   /*
    * Pauses the thread pool - all currently executing tasks will finish, but any
    * remaining tasks in the task queue will not be executed until unpause() is

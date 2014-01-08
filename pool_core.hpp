@@ -39,9 +39,17 @@ class pool_core : public std::enable_shared_from_this<pool_core>
                           unsigned int priority)
   {
     auto promise = std::make_shared<std::promise<T>>();
-    std::shared_ptr<task_base> t = std::make_shared<task<T>>(func, priority, promise);
+    std::shared_ptr<task_base> t =
+            std::make_shared<task<T>>(func, priority, promise);
     add_task_wrapper(t);
     return promise->get_future();
+  }
+
+  void add_task(std::function<void(void)> const & func,
+                unsigned int priority)
+  {
+    std::shared_ptr<task_base> t = std::make_shared<task<void>>(func, priority);
+    add_task_wrapper(t);
   }
 
   void pause()
@@ -169,7 +177,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-  std::priority_queue<std::shared_ptr<task_base>, std::vector<std::shared_ptr<task_base>>, task_comparator> m_tasks;
+  std::priority_queue<std::shared_ptr<task_base>,
+      std::vector<std::shared_ptr<task_base>>, task_comparator> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex;
 

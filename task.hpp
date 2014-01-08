@@ -23,7 +23,7 @@ class task : public task_base
 {
  public:
   task(std::function<T(void)> const & function,
-               unsigned int priority, std::shared_ptr<std::promise<T>> p)
+       unsigned int priority, std::shared_ptr<std::promise<T>> p)
     : m_function(function),
       m_priority(priority),
       promise(std::shared_ptr<std::promise<T>>(p)) {}
@@ -48,10 +48,37 @@ class task : public task_base
   const unsigned int m_priority;
 };
 
+template <>
+class task<void> : public task_base
+{
+ public:
+  task(std::function<void(void)> const & function,
+       unsigned int priority)
+    : m_function(function), m_priority(priority) {}
+
+  void operator() (void)
+  {
+    if (m_function)
+    {
+      m_function();
+    }
+  }
+  
+  unsigned int get_priority() const
+  {
+    return m_priority;
+  }
+
+ private:
+  std::function<void(void)> m_function;
+  unsigned int m_priority;
+};
+
 class task_comparator
 {
  public:
-  bool operator() (const std::shared_ptr<task_base>& lhs, const std::shared_ptr<task_base>& rhs)
+  bool operator() (const std::shared_ptr<task_base>& lhs,
+                   const std::shared_ptr<task_base>& rhs)
   {
     return (lhs->get_priority() < rhs->get_priority());
   }
