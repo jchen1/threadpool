@@ -21,11 +21,6 @@ class task_wrapper
     }
   }
   
-  bool operator() (const task_wrapper& lhs, const task_wrapper& rhs)
-  {
-    return (lhs.get_priority() < rhs.get_priority());
-  }
-  
   unsigned int get_priority() const
   {
     return m_priority;
@@ -33,7 +28,16 @@ class task_wrapper
 
  private:
   std::function<void(void)> m_function;
-  const unsigned int m_priority;
+  unsigned int m_priority;
+};
+
+class task_wrapper_comparator
+{
+ public:
+  bool operator() (const task_wrapper& lhs, const task_wrapper& rhs) const
+  {
+    return (lhs.get_priority() < rhs.get_priority());
+  }
 };
 
 }

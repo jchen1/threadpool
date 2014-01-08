@@ -165,7 +165,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-  std::priority_queue<task_wrapper> m_tasks;
+  std::priority_queue<task_wrapper, std::vector<task_wrapper>, task_wrapper_comparator> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex;
 
