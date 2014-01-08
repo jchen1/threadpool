@@ -19,6 +19,12 @@ void func(int i)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
+int future_func(int ret)
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    return ret;
+}
+
 int main(int argc, char** argv)
 {
     if (argc != 3)
@@ -40,9 +46,11 @@ int main(int argc, char** argv)
 
     tp.add_task(std::bind(func, 50), 5);
     tp.add_task(std::bind(func, 100), 100); 	//executed before previous line
-    
+    auto future = tp.add_task(std::bind(future_func, 50), 50);
     tp->unpause();
     
     tp.wait();
+
+    cout << future << endl; //prints 50
 }
 ```
