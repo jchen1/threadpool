@@ -6,7 +6,7 @@
 #include <queue>
 #include <vector>
 
-#include "task_wrapper.hpp"
+#include "task.hpp"
 #include "worker_thread.hpp"
 
 namespace threadpool {
@@ -38,7 +38,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   std::future<T> add_task(std::function<T(void)> const & func,
                           unsigned int priority)
   {
-    return add_task_wrapper(new task_wrapper<T>(func, priority));
+    task<T> t(func, priority);
+    return add_task_wrapper(t);
   }
 
   void pause()
@@ -66,11 +67,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     m_task_mutex.lock();
     if (!m_tasks.empty())
     {
-      auto task = *m_tasks.top();
+      auto t = *m_tasks.top();
       m_tasks.pop();
       m_task_mutex.unlock();
       ++m_threads_running;
-      task();
+      t();
       --m_threads_running;
 
       idle_ms = 0;
@@ -143,11 +144,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
  private: 
   template <class T>
-  std::future<T> add_task_wrapper(task_wrapper<T> const & task)
+  std::future<T> add_task_wrapper(task<T> & t)
   {
     if (m_stop_requested.load())
     {
-      return;
+      return t.get_future();
     }
     
     m_task_mutex.lock();
@@ -162,14 +163,14 @@ class pool_core : public std::enable_shared_from_this<pool_core>
         worker_thread<pool_core>::create_and_attach(shared_from_this()));
       ++m_threads_created;
     }
-    m_tasks.emplace(task);
+    m_tasks.emplace(t);
     m_task_mutex.unlock();
 
-    return task.get_future();
+    return t.get_future();
   }
 
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-  std::priority_queue<std::unique_ptr<task_wrapper_base>> m_tasks;
+  std::priority_queue<std::unique_ptr<task_base>, std::vector<std::unique_ptr<task_base>>, task_comparator> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex;
 

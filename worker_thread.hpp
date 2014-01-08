@@ -3,8 +3,6 @@
 
 #include <thread>
 
-#include "task_wrapper.hpp"
-
 namespace threadpool {
 
 /*
@@ -31,7 +29,7 @@ class worker_thread
 
   static worker_thread_ptr create_and_attach(std::shared_ptr<pool_core> pool)
   {
-    auto worker = make_shared(new worker_thread<pool_core>(pool));
+    auto worker = make_shared(worker_thread<pool_core>(pool));
     if (worker)
     {
       worker->m_thread.reset(new std::thread(
