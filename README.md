@@ -44,6 +44,6 @@ int main(int argc, char** argv)
     
     tp.unpause();
     
-    tp.wait(false);
+    tp.wait();
 }
 ```
