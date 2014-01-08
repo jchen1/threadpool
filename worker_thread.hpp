@@ -5,8 +5,6 @@
 #include <memory>
 #include <thread>
 
-#include "task.hpp"
-
 namespace threadpool {
 
 template <class pool_core>
