@@ -35,7 +35,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
   
   template <class T>
-  std::future<T> add_task(std::function<T(void)> const & func, unsigned int priority)
+  std::future<T> add_task(std::function<T(void)> const & func,
+                          unsigned int priority)
   {
     return add_task(new task_wrapper<T>(func, priority));
   }
