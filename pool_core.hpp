@@ -38,7 +38,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   std::future<T> add_task(std::function<T(void)> const & func,
                           unsigned int priority)
   {
-    return add_task(new task_wrapper<T>(func, priority));
+    return add_task_wrapper(new task_wrapper<T>(func, priority));
   }
 
   void pause()
@@ -143,7 +143,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
  private: 
   template <class T>
-  std::future<T> add_task(task_wrapper<T> const & task)
+  std::future<T> add_task_wrapper(task_wrapper<T> const & task)
   {
     if (m_stop_requested.load())
     {
