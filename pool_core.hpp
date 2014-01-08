@@ -35,13 +35,13 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
   
   template <class T>
-  std::shared_ptr<std::promise<T>> add_task(std::function<T(void)> const & func,
+  std::future<T> add_task(std::function<T(void)> const & func,
                           unsigned int priority)
   {
     auto promise = std::make_shared<std::promise<T>>();
     std::shared_ptr<task_base> t = std::make_shared<task<T>>(func, priority, promise);
     add_task_wrapper(t);
-    return promise;
+    return promise->get_future();
   }
 
   void pause()

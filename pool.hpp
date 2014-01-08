@@ -35,7 +35,7 @@ class pool
    * queue. Returns a future for the eventual return value of the function.
    */
   template <class T>
-  inline std::shared_ptr<std::promise<T>> add_task(std::function<T(void)> const & func,
+  inline std::future<T> add_task(std::function<T(void)> const & func,
                        unsigned int priority = 0)
   {
     return m_core->add_task(func, priority);
