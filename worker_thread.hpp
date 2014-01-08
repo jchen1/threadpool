@@ -39,7 +39,6 @@ class worker_thread
     return worker;
   }
 
-
  private:
   void run()
   {
