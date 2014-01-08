@@ -35,7 +35,7 @@ class pool
    * queue. Returns a future for the eventual return value of the function.
    */
   template <class T>
-  inline std::future<T> add_task(std::function<T(void)> const & func,
+  inline std::shared_ptr<std::promise<T>> add_task(std::function<T(void)> const & func,
                        unsigned int priority = 0)
   {
     return m_core->add_task(func, priority);
@@ -82,7 +82,7 @@ class pool
    * finish. wait(false), on the other hand, will wait until the task queue
    * is empty and the running workers finish.
    */
-  inline void wait(bool clear_tasks)
+  inline void wait(bool clear_tasks = false)
   {
     m_core->wait(clear_tasks);
   }

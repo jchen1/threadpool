@@ -10,11 +10,7 @@ namespace threadpool {
 class task_base
 {
  public:
-  virtual void operator() (void)
-  {
-    printf("fu");
-    return;
-  }
+  virtual void operator() (void) {}
 
   virtual unsigned int get_priority() const
   {
@@ -27,17 +23,16 @@ class task : public task_base
 {
  public:
   task(std::function<T(void)> const & function,
-               unsigned int priority)
-    : m_function(function), m_priority(priority) {}
+               unsigned int priority, std::shared_ptr<std::promise<T>> p)
+    : m_function(function),
+      m_priority(priority),
+      promise(std::shared_ptr<std::promise<T>>(p)) {}
 
   void operator() (void)
   {
-    printf("hi\n");
     if (m_function)
     {
-      printf("running\n");
-      promise.set_value(m_function());
-      printf("ran\n");
+      promise->set_value(m_function());
     }
   }
   
@@ -46,14 +41,9 @@ class task : public task_base
     return m_priority;
   }
 
-  std::future<T> get_future()
-  {
-    return promise.get_future();
-  }
-
  private:
   std::function<T(void)> m_function;
-  std::promise<T> promise;
+  std::shared_ptr<std::promise<T>> promise;
 
   const unsigned int m_priority;
 };

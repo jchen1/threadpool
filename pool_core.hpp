@@ -35,11 +35,13 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
   
   template <class T>
-  std::future<T> add_task(std::function<T(void)> const & func,
+  std::shared_ptr<std::promise<T>> add_task(std::function<T(void)> const & func,
                           unsigned int priority)
   {
-    std::shared_ptr<task<T>> t(new task<T>(func, priority));
-    return add_task_wrapper(t);
+    auto promise = std::make_shared<std::promise<T>>();
+    std::shared_ptr<task_base> t = std::make_shared<task<T>>(func, priority, promise);
+    add_task_wrapper(t);
+    return promise;
   }
 
   void pause()
@@ -67,11 +69,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     m_task_mutex.lock();
     if (!m_tasks.empty())
     {
-      auto t = *m_tasks.top();
+      std::shared_ptr<task_base> t = m_tasks.top();
       m_tasks.pop();
       m_task_mutex.unlock();
       ++m_threads_running;
-      t();
+      (*t)();
       --m_threads_running;
 
       idle_ms = 0;
@@ -143,12 +145,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
  private: 
-  template <class T>
-  std::future<T> add_task_wrapper(std::shared_ptr<task<T>> & t)
+  void add_task_wrapper(std::shared_ptr<task_base> & t)
   {
     if (m_stop_requested.load())
     {
-      return t->get_future();
+      return;
     }
     
     m_task_mutex.lock();
@@ -162,13 +163,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       m_threads.emplace_back(
         worker_thread<pool_core>::create_and_attach(shared_from_this()));
       ++m_threads_created;
-      printf("started\n");
     }
-    auto future = t->get_future();
-    m_tasks.emplace(t);
+    m_tasks.push(t);
     m_task_mutex.unlock();
-
-    return future;
   }
 
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
