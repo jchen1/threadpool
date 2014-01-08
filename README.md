@@ -36,7 +36,7 @@ int main(int argc, char** argv)
     
     for (int i = 0; i < max_num; i++)
     {
-        tp.add_task(std::bind(func, i));
+        tp.add_task(std::bind(func, i));    //default priority is 0
     }
     
     tp.pause();
