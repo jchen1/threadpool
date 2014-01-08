@@ -7,6 +7,10 @@
 
 namespace threadpool {
 
+/*
+ * worker_thread is templated to avoid cyclical includes - otherwise,
+ * worker_thread.hpp would have to include pool_core.hpp and vice versa.
+ */
 template <class pool_core>
 class worker_thread
 {
@@ -27,7 +31,7 @@ class worker_thread
 
   static worker_thread_ptr create_and_attach(std::shared_ptr<pool_core> pool)
   {
-    worker_thread_ptr worker(new worker_thread<pool_core>(pool));
+    auto worker = make_shared(new worker_thread<pool_core>(pool));
     if (worker)
     {
       worker->m_thread.reset(new std::thread(
