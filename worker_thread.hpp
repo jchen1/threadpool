@@ -1,8 +1,6 @@
 #ifndef THREADPOOL_WORKERTHREAD_H
 #define THREADPOOL_WORKERTHREAD_H
 
-#include <functional>
-#include <memory>
 #include <thread>
 
 #include "task_wrapper.hpp"

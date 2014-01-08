@@ -33,10 +33,11 @@ class pool
    * function that takes arguments, use std::bind() on the function before
    * adding it to the task queue.
    */
-  inline void add_task(std::function<void(void)> const & func,
+  template <class T>
+  inline std::future<T> add_task(std::function<T(void)> const & func,
                        unsigned int priority = 0)
   {
-    m_core->add_task(func, priority);
+    return m_core->add_task(func, priority);
   }
 
   /*
