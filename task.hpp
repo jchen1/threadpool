@@ -1,15 +1,15 @@
-#ifndef THREADPOOL_TASKWRAPPER_H
-#define THREADPOOL_TASKWRAPPER_H
+#ifndef THREADPOOL_TASK_H
+#define THREADPOOL_TASK_H
 
 #include <functional>
 #include <memory>
 
 namespace threadpool {
 
-class task_wrapper
+class task
 {
  public:
-  task_wrapper(std::function<void(void)> const & function,
+  task(std::function<void(void)> const & function,
                unsigned int priority)
     : m_function(function), m_priority(priority) {}
 
@@ -31,10 +31,10 @@ class task_wrapper
   unsigned int m_priority;
 };
 
-class task_wrapper_comparator
+class task_comparator
 {
  public:
-  bool operator() (const task_wrapper& lhs, const task_wrapper& rhs) const
+  bool operator() (const task& lhs, const task& rhs) const
   {
     return (lhs.get_priority() < rhs.get_priority());
   }
@@ -42,4 +42,4 @@ class task_wrapper_comparator
 
 }
 
-#endif //THREADPOOL_TASKWRAPPER_H
+#endif //THREADPOOL_TASK_H

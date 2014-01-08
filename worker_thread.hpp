@@ -5,7 +5,7 @@
 #include <memory>
 #include <thread>
 
-#include "task_wrapper.hpp"
+#include "task.hpp"
 
 namespace threadpool {
 
