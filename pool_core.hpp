@@ -153,7 +153,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
  private: 
-  void add_task_wrapper(std::shared_ptr<task_base> & t)
+  void add_task_wrapper(std::shared_ptr<task_base> const & t)
   {
     if (m_stop_requested.load())
     {

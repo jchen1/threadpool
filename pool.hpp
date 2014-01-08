@@ -44,7 +44,7 @@ class pool
   inline void add_task(std::function<void(void)> const & func,
                 unsigned int priority = 0)
   {
-    return m_core->add_task(func, priority);
+    m_core->add_task(func, priority);
   }
 
   /*
