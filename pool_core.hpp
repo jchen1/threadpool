@@ -38,7 +38,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   std::future<T> add_task(std::function<T(void)> const & func,
                           unsigned int priority)
   {
-    task<T> t(func, priority);
+    std::shared_ptr<task<T>> t(new task<T>(func, priority));
     return add_task_wrapper(t);
   }
 
@@ -144,11 +144,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
  private: 
   template <class T>
-  std::future<T> add_task_wrapper(task<T> & t)
+  std::future<T> add_task_wrapper(std::shared_ptr<task<T>> & t)
   {
     if (m_stop_requested.load())
     {
-      return t.get_future();
+      return t->get_future();
     }
     
     m_task_mutex.lock();
@@ -162,15 +162,17 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       m_threads.emplace_back(
         worker_thread<pool_core>::create_and_attach(shared_from_this()));
       ++m_threads_created;
+      printf("started\n");
     }
+    auto future = t->get_future();
     m_tasks.emplace(t);
     m_task_mutex.unlock();
 
-    return t.get_future();
+    return future;
   }
 
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-  std::priority_queue<std::unique_ptr<task_base>, std::vector<std::unique_ptr<task_base>>, task_comparator> m_tasks;
+  std::priority_queue<std::shared_ptr<task_base>, std::vector<std::shared_ptr<task_base>>, task_comparator> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex;
 

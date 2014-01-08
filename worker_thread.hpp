@@ -29,7 +29,7 @@ class worker_thread
 
   static worker_thread_ptr create_and_attach(std::shared_ptr<pool_core> pool)
   {
-    auto worker = make_shared(worker_thread<pool_core>(pool));
+    worker_thread_ptr worker(new worker_thread<pool_core>(pool));
     if (worker)
     {
       worker->m_thread.reset(new std::thread(

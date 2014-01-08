@@ -10,8 +10,16 @@ namespace threadpool {
 class task_base
 {
  public:
-  void operator() (void) const;
-  unsigned int get_priority() const;
+  virtual void operator() (void)
+  {
+    printf("fu");
+    return;
+  }
+
+  virtual unsigned int get_priority() const
+  {
+    return 0;
+  }
 };
 
 template <class T>
@@ -22,11 +30,14 @@ class task : public task_base
                unsigned int priority)
     : m_function(function), m_priority(priority) {}
 
-  void operator() (void) const
+  void operator() (void)
   {
+    printf("hi\n");
     if (m_function)
     {
+      printf("running\n");
       promise.set_value(m_function());
+      printf("ran\n");
     }
   }
   
@@ -37,7 +48,7 @@ class task : public task_base
 
   std::future<T> get_future()
   {
-    return std::move(promise.get_future());
+    return promise.get_future();
   }
 
  private:
@@ -50,7 +61,7 @@ class task : public task_base
 class task_comparator
 {
  public:
-  bool operator() (const std::unique_ptr<task_base>& lhs, const std::unique_ptr<task_base>& rhs)
+  bool operator() (const std::shared_ptr<task_base>& lhs, const std::shared_ptr<task_base>& rhs)
   {
     return (lhs->get_priority() < rhs->get_priority());
   }
