@@ -60,3 +60,18 @@ int main(int argc, char** argv)
     std::cout << future.get() << std::endl; //prints 50
 }
 ```
+
+Sample output:
+
+```
+./sample 5 5
+
+100
+50
+2
+4
+3
+01
+
+50
+```
