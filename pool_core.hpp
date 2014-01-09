@@ -16,12 +16,14 @@ class pool_core : public std::enable_shared_from_this<pool_core>
  public:
   static const unsigned int MAX_IDLE_MS_BEFORE_DESPAWN = 1000;
 
-  pool_core(unsigned int max_threads, bool start_paused)
+  pool_core(unsigned int max_threads,
+            bool start_paused,
+            unsigned int despawn_time_ms)
     : m_max_threads(max_threads),
+      m_despawn_time_ms(despawn_time_ms),
       m_threads_running(0),
       m_threads_created(0),
       m_stop_requested(false)
-      
   {
     m_threads.reserve(m_max_threads);
     if (start_paused)
@@ -94,7 +96,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       ++idle_ms;
     }
 
-    return (!empty() && idle_ms < MAX_IDLE_MS_BEFORE_DESPAWN &&
+    return (!empty() && idle_ms < m_despawn_time_ms &&
       m_threads_created <= m_max_threads);
   }
 
@@ -183,7 +185,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   std::mutex m_task_mutex, m_pause_mutex;
 
-  unsigned int m_max_threads;
+  unsigned int m_max_threads, m_despawn_time_ms;
 
   std::atomic_uint m_threads_running;
   std::atomic_uint m_threads_created;

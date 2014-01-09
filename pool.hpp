@@ -12,8 +12,7 @@ namespace threadpool {
  * added to a max-priority queue. Threads are created only when there are no
  * idle threads available and the total thread count does not exceed the
  * maximum thread count. Threads are despawned if they are idle for more than
- * a specified time (MAX_IDLE_MS_BEFORE_DESPAWN in pool_core.hpp, defaulted
- * to 1000 ms).
+ * despawn_file_ms, the third argument in the constructor of the threadpool.
  */
 class pool
 {
@@ -25,8 +24,9 @@ class pool
    * physical cores the CPU has, and start_paused = false.
    */
   pool(unsigned int max_threads = std::thread::hardware_concurrency(),
-             bool start_paused = false)
-    : m_core(new pool_core(max_threads, start_paused)) {}
+       bool start_paused = false,
+       unsigned int despawn_time_ms = 1000)
+    : m_core(new pool_core(max_threads, start_paused, despawn_time_ms)) {}
 
   /*
    * Adds a new task to the task queue, with an optional priority. The task
