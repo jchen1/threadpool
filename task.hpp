@@ -25,8 +25,8 @@ class task : public task_base
   task(std::function<T(void)> const & function,
        unsigned int priority, std::shared_ptr<std::promise<T>> p)
     : m_function(function),
-      m_priority(priority),
-      promise(std::shared_ptr<std::promise<T>>(p)) {}
+      promise(std::shared_ptr<std::promise<T>>(p)),
+      m_priority(priority) {}
 
   void operator() (void)
   {

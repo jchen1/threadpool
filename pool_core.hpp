@@ -17,10 +17,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   static const unsigned int MAX_IDLE_MS_BEFORE_DESPAWN = 1000;
 
   pool_core(unsigned int max_threads, bool start_paused)
-    : m_threads_running(0),
+    : m_max_threads(max_threads),
+      m_threads_running(0),
       m_threads_created(0),
-      m_stop_requested(false),
-      m_max_threads(max_threads)
+      m_stop_requested(false)
+      
   {
     m_threads.reserve(m_max_threads);
     if (start_paused)
@@ -39,17 +40,17 @@ class pool_core : public std::enable_shared_from_this<pool_core>
                           unsigned int priority)
   {
     auto promise = std::make_shared<std::promise<T>>();
-    std::shared_ptr<task_base> t =
+    std::shared_ptr<task_base> task_ptr =
             std::make_shared<task<T>>(func, priority, promise);
-    add_task_wrapper(t);
+    add_task_wrapper(task_ptr);
     return promise->get_future();
   }
 
-  void add_task(std::function<void(void)> const & func,
-                unsigned int priority)
+  void add_task(std::function<void(void)> const & func, unsigned int priority)
   {
-    std::shared_ptr<task_base> t = std::make_shared<task<void>>(func, priority);
-    add_task_wrapper(t);
+    std::shared_ptr<task_base> task_ptr = 
+            std::make_shared<task<void>>(func, priority);
+    add_task_wrapper(task_ptr);
   }
 
   void pause()
@@ -153,7 +154,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
  private: 
-  void add_task_wrapper(std::shared_ptr<task_base> const & t)
+  void add_task_wrapper(std::shared_ptr<task_base> const & task_ptr)
   {
     if (m_stop_requested.load())
     {
@@ -166,13 +167,13 @@ class pool_core : public std::enable_shared_from_this<pool_core>
      * maximum number of allowed threads, create a new thread.
      */
     if (m_threads_created == m_threads_running &&
-      m_threads_created != m_max_threads)
+        m_threads_created != m_max_threads)
     {
       m_threads.emplace_back(
         worker_thread<pool_core>::create_and_attach(shared_from_this()));
       ++m_threads_created;
     }
-    m_tasks.push(t);
+    m_tasks.push(task_ptr);
     m_task_mutex.unlock();
   }
 
