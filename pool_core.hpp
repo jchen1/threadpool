@@ -42,9 +42,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
                           unsigned int priority)
   {
     auto promise = std::make_shared<std::promise<T>>();
-    std::shared_ptr<task_base> task_ptr =
+    std::shared_ptr<task_base> task_wrapper =
             std::make_shared<task<T>>(func, priority, promise);
-    add_task_wrapper(task_ptr);
+    add_task_wrapper(task_wrapper);
     return promise->get_future();
   }
 
@@ -52,9 +52,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
                              unsigned int priority)
   {
     auto promise = std::make_shared<std::promise<void>>();
-    std::shared_ptr<task_base> task_ptr = 
+    std::shared_ptr<task_base> task_wrapper = 
             std::make_shared<task<void>>(func, priority, promise);
-    add_task_wrapper(task_ptr);
+    add_task_wrapper(task_wrapper);
     return promise->get_future();
   }
 
@@ -165,7 +165,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
  private: 
-  void add_task_wrapper(std::shared_ptr<task_base> const & task_ptr)
+  void add_task_wrapper(std::shared_ptr<task_base> const & task_wrapper)
   {
     if (m_stop_requested.load())
     {
@@ -184,7 +184,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       m_threads.emplace_back(std::shared_ptr<worker_thread<pool_core>>(
         new worker_thread<pool_core>(shared_from_this())));
     }
-    m_tasks.push(task_ptr);
+    m_tasks.push(task_wrapper);
   }
 
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
