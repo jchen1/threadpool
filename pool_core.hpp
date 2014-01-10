@@ -77,19 +77,18 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   void run_task()
   {  
     unsigned int idle_ms(0);
-    std::unique_lock<std::mutex> task_lock(m_task_mutex, std::defer_lock);
 
     while (idle_ms < m_despawn_time_ms)
     {
       m_pause_mutex.lock();
       m_pause_mutex.unlock();
 
-      task_lock.lock();
+      m_task_mutex.lock();
       if (!m_tasks.empty())
       {
         std::shared_ptr<task_base> t = m_tasks.top();
         m_tasks.pop();
-        task_lock.unlock();
+        m_task_mutex.unlock();
         ++m_threads_running;
         (*t)();
         --m_threads_running;
@@ -100,7 +99,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         ++idle_ms;
-        task_lock.unlock();
+        m_task_mutex.unlock();
 
         if (m_join_requested.load())
         {
