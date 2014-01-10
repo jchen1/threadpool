@@ -40,7 +40,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   std::future<T> add_task(std::function<T(void)> const & func,
                           unsigned int priority)
   {
-    auto promise = std::make_shared<std::promise<T>>();
     /*
      * If all created threads are executing tasks and we have not spawned the
      * maximum number of allowed threads, create a new thread.
@@ -51,6 +50,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       m_threads.emplace_back(std::shared_ptr<worker_thread<pool_core>>(
         new worker_thread<pool_core>(shared_from_this())));
     }
+    auto promise = std::make_shared<std::promise<T>>();
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
     m_tasks.push(std::make_shared<task<T>>(func, priority, promise));
 
