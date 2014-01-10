@@ -22,8 +22,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       m_despawn_time_ms(despawn_time_ms),
       m_threads_created(0),
       m_threads_running(0),
-      m_join_requested(false),
-      m_stop_requested(false)      
+      m_join_requested(false)
   {
     m_threads.reserve(m_max_threads);
     if (start_paused)
@@ -167,11 +166,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
  private: 
   void add_task_wrapper(std::shared_ptr<task_base> const & task_wrapper)
   {
-    if (m_stop_requested.load())
-    {
-      return;
-    }
-
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
     
     /*
@@ -196,7 +190,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   unsigned int m_max_threads, m_despawn_time_ms;
 
   std::atomic_uint m_threads_created, m_threads_running;
-  std::atomic_bool m_join_requested, m_stop_requested;
+  std::atomic_bool m_join_requested;
 
   friend class worker_thread<pool_core>;
 };
