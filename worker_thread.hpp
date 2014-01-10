@@ -31,10 +31,7 @@ class worker_thread
   void run()
   {
     ++m_pool->m_threads_created;
-    if (m_pool)
-    {
-      m_pool->run_task();
-    }
+    m_pool->run_task();
     --m_pool->m_threads_created;
   }
 

@@ -14,7 +14,6 @@ namespace threadpool {
 class pool_core : public std::enable_shared_from_this<pool_core>
 {
  public:
-
   pool_core(unsigned int max_threads,
             bool start_paused,
             unsigned int despawn_time_ms)
