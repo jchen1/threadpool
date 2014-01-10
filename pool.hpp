@@ -42,7 +42,8 @@ class pool
   }
 
   /*
-   * For a function object with no return value, no future will be returned.
+   * For a function object with no return value, the future will only be of
+   * use in determining whether the task has completed.
    */
   inline std::future<void> add_task(std::function<void(void)> const & func,
                 unsigned int priority = 0)
