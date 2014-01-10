@@ -2,7 +2,6 @@
 #define THREADPOOL_POOLCORE_H
 
 #include <algorithm>
-#include <condition_variable>
 #include <mutex>
 #include <queue>
 #include <vector>
@@ -177,8 +176,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
     m_tasks.push(task_ptr);
   }
-
-  std::condition_variable cv;
 
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
   std::priority_queue<std::shared_ptr<task_base>,
