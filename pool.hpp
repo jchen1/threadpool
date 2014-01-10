@@ -86,14 +86,14 @@ class pool
   }
 
   /*
-   * Waits for all threads to finish executing. wait(true) will clear any
+   * Waits for all threads to finish executing. join(true) will clear any
    * remaining tasks in the task queue, thus exiting once any running workers
-   * finish. wait(false), on the other hand, will wait until the task queue
+   * finish. join(false), on the other hand, will wait until the task queue
    * is empty and the running workers finish.
    */
-  inline void wait(bool clear_tasks = false)
+  inline void join(bool clear_tasks = false)
   {
-    m_core->wait(clear_tasks);
+    m_core->join(clear_tasks);
   }
 
   /*

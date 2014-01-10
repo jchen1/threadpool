@@ -20,9 +20,10 @@ class pool_core : public std::enable_shared_from_this<pool_core>
             unsigned int despawn_time_ms)
     : m_max_threads(max_threads),
       m_despawn_time_ms(despawn_time_ms),
-      m_threads_running(0),
       m_threads_created(0),
-      m_stop_requested(false)
+      m_threads_running(0),
+      m_join_requested(false),
+      m_stop_requested(false)      
   {
     m_threads.reserve(m_max_threads);
     if (start_paused)
@@ -33,7 +34,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   ~pool_core()
   {
-    wait(false);
+    join(false);
   }
   
   template <class T>
@@ -74,31 +75,40 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     m_pause_mutex.unlock();
   }
 
-  bool run_task(unsigned int &idle_ms)
+  void run_task()
   {  
-    m_pause_mutex.lock();
-    m_pause_mutex.unlock();
+    unsigned int idle_ms(0);
+    std::unique_lock<std::mutex> task_lock(m_task_mutex, std::defer_lock);
 
-    std::unique_lock<std::mutex> task_lock(m_task_mutex);
-    if (!m_tasks.empty())
+    while (idle_ms < m_despawn_time_ms)
     {
-      std::shared_ptr<task_base> t = m_tasks.top();
-      m_tasks.pop();
-      task_lock.unlock();
-      ++m_threads_running;
-      (*t)();
-      --m_threads_running;
+      m_pause_mutex.lock();
+      m_pause_mutex.unlock();
 
-      idle_ms = 0;
-    }
-    else
-    {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-      ++idle_ms;
-    }
+      task_lock.lock();
+      if (!m_tasks.empty())
+      {
+        std::shared_ptr<task_base> t = m_tasks.top();
+        m_tasks.pop();
+        task_lock.unlock();
+        ++m_threads_running;
+        (*t)();
+        --m_threads_running;
 
-    return (!empty() && idle_ms < m_despawn_time_ms &&
-      m_threads_created <= m_max_threads);
+        idle_ms = 0;
+      }
+      else
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        ++idle_ms;
+        task_lock.unlock();
+
+        if (m_join_requested.load())
+        {
+          return;
+        }
+      }
+    }
   }
 
   bool empty()
@@ -116,21 +126,22 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
   }
 
-  void wait(bool clear_tasks)
+  void join(bool clear_tasks)
   {
     if (clear_tasks)
     {
       clear();
     }
 
-    m_stop_requested = true;
+    m_join_requested = true;
 
     for (auto thread : m_threads)
     {
       thread->join();
     }
 
-    m_stop_requested = false;
+    m_join_requested = false;
+
   }
 
   unsigned int get_threads_running() const
@@ -185,9 +196,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   unsigned int m_max_threads, m_despawn_time_ms;
 
-  std::atomic_uint m_threads_running;
-  std::atomic_uint m_threads_created;
-  std::atomic_bool m_stop_requested;
+  std::atomic_uint m_threads_created, m_threads_running;
+  std::atomic_bool m_join_requested, m_stop_requested;
 
   friend class worker_thread<pool_core>;
 };

@@ -55,7 +55,7 @@ int main(int argc, char** argv)
     std::function<int(void)> f_func = std::bind(future_func, 50);
     auto future = tp.add_task(f_func, 5);
     
-    tp.wait(false);
+    tp.join(false);
 
     std::cout << future.get() << std::endl; //prints 50
 }

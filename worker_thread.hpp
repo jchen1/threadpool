@@ -42,8 +42,10 @@ class worker_thread
  private:
   void run()
   {
-    unsigned int idle_ms(0);
-    while (m_pool && m_pool->run_task(idle_ms));
+    if (m_pool)
+    {
+      m_pool->run_task();
+    }
     --m_pool->m_threads_created;
   }
 
