@@ -41,9 +41,19 @@ class pool_core : public std::enable_shared_from_this<pool_core>
                           unsigned int priority)
   {
     auto promise = std::make_shared<std::promise<T>>();
-    std::shared_ptr<task_base> task_wrapper =
-            std::make_shared<task<T>>(func, priority, promise);
-    add_task_wrapper(task_wrapper);
+    /*
+     * If all created threads are executing tasks and we have not spawned the
+     * maximum number of allowed threads, create a new thread.
+     */
+    if (m_threads_created == m_threads_running &&
+        m_threads_created != m_max_threads)
+    {
+      m_threads.emplace_back(std::shared_ptr<worker_thread<pool_core>>(
+        new worker_thread<pool_core>(shared_from_this())));
+    }
+    std::unique_lock<std::mutex> task_lock(m_task_mutex);
+    m_tasks.push(std::make_shared<task<T>>(func, priority, promise));
+
     return promise->get_future();
   }
 
@@ -153,24 +163,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     return m_max_threads;
   }
 
- private: 
-  void add_task_wrapper(std::shared_ptr<task_base> const & task_wrapper)
-  {
-    std::unique_lock<std::mutex> task_lock(m_task_mutex);
-    
-    /*
-     * If all created threads are executing tasks and we have not spawned the
-     * maximum number of allowed threads, create a new thread.
-     */
-    if (m_threads_created == m_threads_running &&
-        m_threads_created != m_max_threads)
-    {
-      m_threads.emplace_back(std::shared_ptr<worker_thread<pool_core>>(
-        new worker_thread<pool_core>(shared_from_this())));
-    }
-    m_tasks.push(task_wrapper);
-  }
-
+ private:
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
   std::priority_queue<std::shared_ptr<task_base>,
       std::vector<std::shared_ptr<task_base>>, task_comparator> m_tasks;
