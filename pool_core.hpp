@@ -48,11 +48,14 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     return promise->get_future();
   }
 
-  void add_task(std::function<void(void)> const & func, unsigned int priority)
+  std::future<void> add_task(std::function<void(void)> const & func,
+                             unsigned int priority)
   {
+    auto promise = std::make_shared<std::promise<void>>();
     std::shared_ptr<task_base> task_ptr = 
-            std::make_shared<task<void>>(func, priority);
+            std::make_shared<task<void>>(func, priority, promise);
     add_task_wrapper(task_ptr);
+    return promise->get_future();
   }
 
   void pause()

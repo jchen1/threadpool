@@ -44,10 +44,10 @@ class pool
   /*
    * For a function object with no return value, no future will be returned.
    */
-  inline void add_task(std::function<void(void)> const & func,
+  inline std::future<void> add_task(std::function<void(void)> const & func,
                 unsigned int priority = 0)
   {
-    m_core->add_task(func, priority);
+    return m_core->add_task(func, priority);
   }
 
   /*
