@@ -183,7 +183,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     {
       m_threads.emplace_back(
         worker_thread<pool_core>::create_and_attach(shared_from_this()));
-      ++m_threads_created;
     }
     m_tasks.push(task_ptr);
   }

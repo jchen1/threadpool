@@ -42,6 +42,7 @@ class worker_thread
  private:
   void run()
   {
+    ++m_threads_created;
     if (m_pool)
     {
       m_pool->run_task();
