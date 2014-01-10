@@ -2,6 +2,7 @@
 #define THREADPOOL_POOLCORE_H
 
 #include <algorithm>
+#include <condition_variable>
 #include <mutex>
 #include <queue>
 #include <vector>
@@ -14,7 +15,6 @@ namespace threadpool {
 class pool_core : public std::enable_shared_from_this<pool_core>
 {
  public:
-  static const unsigned int MAX_IDLE_MS_BEFORE_DESPAWN = 1000;
 
   pool_core(unsigned int max_threads,
             bool start_paused,
@@ -80,12 +80,12 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     m_pause_mutex.lock();
     m_pause_mutex.unlock();
 
-    m_task_mutex.lock();
+    std::unique_lock<std::mutex> task_lock(m_task_mutex);
     if (!m_tasks.empty())
     {
       std::shared_ptr<task_base> t = m_tasks.top();
       m_tasks.pop();
-      m_task_mutex.unlock();
+      task_lock.unlock();
       ++m_threads_running;
       (*t)();
       --m_threads_running;
@@ -94,7 +94,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
     else
     {
-      m_task_mutex.unlock();
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       ++idle_ms;
     }
@@ -105,20 +104,17 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   bool empty()
   {
-    m_task_mutex.lock();
-    bool ret = m_tasks.empty();
-    m_task_mutex.unlock();
-    return ret;
+    std::unique_lock<std::mutex> task_lock(m_task_mutex);
+    return m_tasks.empty();
   }
 
   void clear()
   {
-    m_task_mutex.lock();
+    std::unique_lock<std::mutex> task_lock(m_task_mutex);
     while (!m_tasks.empty())
     {
       m_tasks.pop();
     }
-    m_task_mutex.unlock();
   }
 
   void wait(bool clear_tasks)
@@ -165,8 +161,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     {
       return;
     }
+
+    std::unique_lock<std::mutex> task_lock(m_task_mutex);
     
-    m_task_mutex.lock();
     /*
      * If all created threads are executing tasks and we have not spawned the
      * maximum number of allowed threads, create a new thread.
@@ -179,8 +176,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       ++m_threads_created;
     }
     m_tasks.push(task_ptr);
-    m_task_mutex.unlock();
   }
+
+  std::condition_variable cv;
 
   std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
   std::priority_queue<std::shared_ptr<task_base>,
