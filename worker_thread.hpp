@@ -13,9 +13,9 @@ template <class pool_core>
 class worker_thread
 {
  public:
-  typedef std::shared_ptr<worker_thread<pool_core>> worker_thread_ptr;
-
-  worker_thread(std::shared_ptr<pool_core> pool) : m_pool(pool) {}
+  worker_thread(std::shared_ptr<pool_core> pool)
+    : m_pool(pool),
+      m_thread(std::thread(std::bind(&worker_thread::run, this))) {}
 
   ~worker_thread()
   {
@@ -24,25 +24,13 @@ class worker_thread
 
   void join()
   {
-    m_thread->join();
-  }
-
-  static worker_thread_ptr create_and_attach(std::shared_ptr<pool_core> pool)
-  {
-    worker_thread_ptr worker(new worker_thread<pool_core>(pool));
-    if (worker)
-    {
-      worker->m_thread.reset(new std::thread(
-        std::bind(&worker_thread::run, worker)));
-    }
-
-    return worker;
+    m_thread.join();
   }
 
  private:
   void run()
   {
-    ++m_threads_created;
+    ++m_pool->m_threads_created;
     if (m_pool)
     {
       m_pool->run_task();
@@ -51,8 +39,7 @@ class worker_thread
   }
 
   std::shared_ptr<pool_core> m_pool;
-  std::shared_ptr<std::thread> m_thread;
-
+  std::thread m_thread;
 };
 
 }
