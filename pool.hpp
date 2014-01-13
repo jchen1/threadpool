@@ -55,6 +55,7 @@ class pool
    * Pauses the thread pool - all currently executing tasks will finish, but any
    * remaining tasks in the task queue will not be executed until unpause() is
    * called. Tasks may still be added to the queue when the pool is paused.
+   * Any spawned threads will not despawn.
    */
   inline void pause()
   {
@@ -90,7 +91,7 @@ class pool
    * Waits for all threads to finish executing. join(true) will clear any
    * remaining tasks in the task queue, thus exiting once any running workers
    * finish. join(false), on the other hand, will wait until the task queue
-   * is empty and the running workers finish.
+   * is empty and the running workers finish. Spawned threads will exit.
    */
   inline void join(bool clear_tasks = false)
   {

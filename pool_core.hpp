@@ -50,7 +50,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
         new worker_thread<pool_core>(shared_from_this())));
     }
     auto promise = std::make_shared<std::promise<T>>();
-    std::unique_lock<std::mutex> task_lock(m_task_mutex);
+    std::lock_guard<std::mutex> task_lock(m_task_mutex);
     m_tasks.push(std::make_shared<task<T>>(func, priority, promise));
 
     return promise->get_future();
@@ -110,13 +110,13 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   bool empty()
   {
-    std::unique_lock<std::mutex> task_lock(m_task_mutex);
+    std::lock_guard<std::mutex> task_lock(m_task_mutex);
     return m_tasks.empty();
   }
 
   void clear()
   {
-    std::unique_lock<std::mutex> task_lock(m_task_mutex);
+    std::lock_guard<std::mutex> task_lock(m_task_mutex);
     while (!m_tasks.empty())
     {
       m_tasks.pop();
