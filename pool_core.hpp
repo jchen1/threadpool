@@ -2,6 +2,7 @@
 #define THREADPOOL_POOLCORE_H
 
 #include <algorithm>
+#include <condition_variable>
 #include <mutex>
 #include <queue>
 #include <vector>
@@ -52,6 +53,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     auto promise = std::make_shared<std::promise<T>>();
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
     m_tasks.push(std::make_shared<task<T>>(func, priority, promise));
+    m_task_cv.notify_one();
 
     return promise->get_future();
   }
@@ -75,37 +77,41 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   void run_task()
   {  
-    unsigned int idle_ms(0);
-
-    while (idle_ms < m_despawn_time_ms)
+    while (true)
     {
       m_pause_mutex.lock();
       m_pause_mutex.unlock();
-
-      m_task_mutex.lock();
-      if (!m_tasks.empty())
+      std::shared_ptr<task_base> t = pop_task(m_despawn_time_ms);
+      if (t)
       {
-        std::shared_ptr<task_base> t = m_tasks.top();
-        m_tasks.pop();
-        m_task_mutex.unlock();
         ++m_threads_running;
         (*t)();
         --m_threads_running;
-
-        idle_ms = 0;
       }
-      else
+      else if (m_join_requested.load())
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        ++idle_ms;
-        m_task_mutex.unlock();
-
-        if (m_join_requested.load())
-        {
-          return;
-        }
+        return;
       }
     }
+  }
+
+  std::shared_ptr<task_base> pop_task(unsigned int max_wait)
+  {
+    std::shared_ptr<task_base> ret;
+    std::unique_lock<std::mutex> task_lock(m_task_mutex);
+    while (m_tasks.empty())
+    {
+      if (m_join_requested || 
+          m_task_cv.wait_for(task_lock, std::chrono::milliseconds(max_wait)) ==
+            std::cv_status::timeout)
+      {
+        return ret;
+      }
+    }
+    ret = m_tasks.top();
+    m_tasks.pop();
+
+    return ret;
   }
 
   bool empty()
@@ -167,6 +173,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       std::vector<std::shared_ptr<task_base>>, task_comparator> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex;
+  std::condition_variable m_task_cv;
 
   unsigned int m_max_threads, m_despawn_time_ms;
 
