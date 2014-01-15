@@ -1,7 +1,7 @@
 threadpool
 ==========
 
-Basic threadpool implementation without a master thread to manage load. Tasks submitted to the threadpool must be of type std::function<void(void)>. Tasks are added to a max-priority queue, with a default priority of 0. Threads are automatically created and destroyed to accomodate the load placed on the threadpool.
+Basic threadpool implementation without a master thread to manage load. Tasks submitted to the threadpool must be of type std::function<void(void)>. Tasks are added to a max-priority queue, with a default priority of 0. Threads are automatically created and destroyed to accomodate the load placed on the threadpool. This library uses C++11 features, so make sure to use a compiler that supports it.
 
 To use, just include `pool.hpp` and create an object of type `threadpool::pool`.
 
