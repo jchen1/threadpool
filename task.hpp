@@ -69,8 +69,8 @@ class task<void> : public task_base
 class task_comparator
 {
  public:
-  bool operator() (const std::shared_ptr<task_base>& lhs,
-                   const std::shared_ptr<task_base>& rhs)
+  bool operator() (const std::unique_ptr<task_base>& lhs,
+                   const std::unique_ptr<task_base>& rhs) const
   {
     return (lhs->get_priority() < rhs->get_priority());
   }

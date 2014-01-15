@@ -47,12 +47,12 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     if (m_threads_created == m_threads_running &&
         m_threads_created != m_max_threads)
     {
-      m_threads.emplace_back(std::shared_ptr<worker_thread<pool_core>>(
-        new worker_thread<pool_core>(shared_from_this())));
+      m_threads.emplace_back(std::make_unique<worker_thread<pool_core>>(
+        shared_from_this()));
     }
     auto promise = std::make_shared<std::promise<T>>();
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    m_tasks.push(std::make_shared<task<T>>(func, priority, promise));
+    m_tasks.push(std::make_unique<task<T>>(func, priority, promise));
     m_task_cv.notify_one();
 
     return promise->get_future();
@@ -95,9 +95,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
   }
 
-  std::shared_ptr<task_base> pop_task(unsigned int max_wait)
+  std::unique_ptr<task_base> pop_task(unsigned int max_wait)
   {
-    std::shared_ptr<task_base> ret;
+    std::unique_ptr<task_base> ret;
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
     while (m_tasks.empty())
     {
@@ -108,7 +108,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
         return ret;
       }
     }
-    ret = m_tasks.top();
+    /*
+     * This is OK because we immediately pop the task afterwards, so we don't
+     * mess with the priority queue ordering invariant
+     */
+    ret = std::move(const_cast<std::unique_ptr<task_base>&>(m_tasks.top()));
     m_tasks.pop();
 
     return ret;
@@ -138,7 +142,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
     m_join_requested = true;
 
-    for (auto thread : m_threads)
+    for (auto &thread : m_threads)
     {
       thread->join();
     }
@@ -168,9 +172,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
  private:
-  std::vector<std::shared_ptr<worker_thread<pool_core>>> m_threads;
-  std::priority_queue<std::shared_ptr<task_base>,
-      std::vector<std::shared_ptr<task_base>>, task_comparator> m_tasks;
+  std::vector<std::unique_ptr<worker_thread<pool_core>>> m_threads;
+  std::priority_queue<std::unique_ptr<task_base>,
+      std::vector<std::unique_ptr<task_base>>, task_comparator> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex;
   std::condition_variable m_task_cv;
