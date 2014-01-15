@@ -52,7 +52,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
     auto promise = std::make_shared<std::promise<T>>();
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    m_tasks.push(std::unique_ptr<task<T>>(new task<T>(func, priority, promise)));
+    m_tasks.emplace(std::unique_ptr<task<T>>(
+      new task<T>(func, priority, promise)));
     m_task_cv.notify_one();
 
     return promise->get_future();

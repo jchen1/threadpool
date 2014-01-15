@@ -19,7 +19,7 @@ class task_base
     return m_priority;
   }
 
- protected:
+ private:
   unsigned int m_priority;
 };
 
