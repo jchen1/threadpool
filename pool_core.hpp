@@ -77,11 +77,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   void run_task()
   {  
-    while (true)
+    while (m_threads_created <= m_max_threads)
     {
       m_pause_mutex.lock();
       m_pause_mutex.unlock();
-      std::shared_ptr<task_base> t = pop_task(m_despawn_time_ms);
+      auto t = pop_task(m_despawn_time_ms);
       if (t)
       {
         ++m_threads_running;
