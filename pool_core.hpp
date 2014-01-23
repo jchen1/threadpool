@@ -54,7 +54,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
     m_tasks.emplace(std::unique_ptr<task<T>>(
       new task<T>(func, priority, promise)));
-    m_task_cv.notify_one();
+    m_task_ready.notify_one();
 
     return promise->get_future();
   }
@@ -96,6 +96,12 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
   }
 
+  void wait()
+  {
+    std::unique_lock<std::mutex> task_lock(m_task_mutex);
+    m_task_empty.wait(task_lock, [&]{ return m_tasks.empty(); });
+  }
+
   std::unique_ptr<task_base> pop_task(unsigned int max_wait)
   {
     std::unique_ptr<task_base> ret;
@@ -103,7 +109,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     while (m_tasks.empty())
     {
       if (m_join_requested || 
-          m_task_cv.wait_for(task_lock, std::chrono::milliseconds(max_wait)) ==
+          m_task_ready.wait_for(task_lock, std::chrono::milliseconds(max_wait)) ==
             std::cv_status::timeout)
       {
         return ret;
@@ -115,6 +121,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
      */
     ret = std::move(const_cast<std::unique_ptr<task_base>&>(m_tasks.top()));
     m_tasks.pop();
+
+    if (m_tasks.empty())
+    {
+      m_task_empty.notify_all();
+    }
 
     return ret;
   }
@@ -167,7 +178,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     m_max_threads = max_threads;
   }
 
-  int get_max_threads() const
+  unsigned int get_max_threads() const
   {
     return m_max_threads;
   }
@@ -178,7 +189,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       std::vector<std::unique_ptr<task_base>>, task_comparator> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex;
-  std::condition_variable m_task_cv;
+  std::condition_variable m_task_ready, m_task_empty;
 
   unsigned int m_max_threads, m_despawn_time_ms;
 

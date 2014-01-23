@@ -99,6 +99,14 @@ class pool
   }
 
   /*
+   * Waits for the task queue to empty, without destroying worker threads.
+   */
+  inline void wait()
+  {
+    m_core->wait();
+  }
+
+  /*
    * Returns how many worker threads are currently executing a task.
    */
   inline unsigned int get_threads_running() const
