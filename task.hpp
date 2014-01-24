@@ -23,7 +23,7 @@ class task_base
   unsigned int m_priority;
 };
 
-template <class T>
+template <typename T>
 class task : public task_base
 {
  public:

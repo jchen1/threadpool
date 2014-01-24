@@ -36,7 +36,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     join(false);
   }
   
-  template <class T>
+  template <typename T>
   std::future<T> add_task(std::function<T(void)> const & func,
                           unsigned int priority)
   {
@@ -154,7 +154,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
     m_join_requested = true;
 
-    for (auto &thread : m_threads)
+    for (auto&& thread : m_threads)
     {
       thread->join();
     }
