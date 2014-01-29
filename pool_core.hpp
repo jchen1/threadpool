@@ -107,8 +107,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     while (m_tasks.empty())
     {
       if (m_join_requested || 
-          m_task_ready.wait_for(task_lock, std::chrono::milliseconds(max_wait)) ==
-            std::cv_status::timeout)
+          m_task_ready.wait_for(task_lock,
+            std::chrono::milliseconds(max_wait)) == std::cv_status::timeout)
       {
         return ret;
       }
