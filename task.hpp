@@ -36,6 +36,8 @@ class task : public task_base
     if (m_function)
     {
       promise->set_value(m_function());
+      promise.reset();
+      m_function = nullptr;
     }
   }
 
@@ -58,6 +60,8 @@ class task<void> : public task_base
     {
       m_function();
       promise->set_value();
+      promise.reset();
+      m_function = nullptr;
     }
   }
 

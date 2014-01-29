@@ -47,13 +47,11 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     if (m_threads_created == m_threads_running &&
         m_threads_created != m_max_threads)
     {
-      m_threads.emplace_back(std::unique_ptr<worker_thread<pool_core>>(new
-        worker_thread<pool_core>(shared_from_this())));
+      m_threads.emplace_back(new worker_thread<pool_core>(shared_from_this()));
     }
     auto promise = std::make_shared<std::promise<T>>();
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    m_tasks.emplace(std::unique_ptr<task<T>>(
-      new task<T>(func, priority, promise)));
+    m_tasks.emplace(new task<T>(func, priority, promise));
     m_task_ready.notify_one();
 
     return promise->get_future();
@@ -160,6 +158,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
 
     m_join_requested = false;
+
+    m_threads.clear();
 
   }
 

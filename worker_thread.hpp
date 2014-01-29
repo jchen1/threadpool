@@ -19,7 +19,10 @@ class worker_thread
 
   ~worker_thread()
   {
-    join();
+    if (m_thread.joinable())
+    {
+      m_thread.join();
+    }
   }
 
   void join()
