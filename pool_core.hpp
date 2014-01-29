@@ -59,19 +59,15 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   void pause()
   {
-    /*
-     * First unlocks the pause mutex before locking it, ensuring that if the
-     * current thread already owns the lock (i.e. pause() has been called prior
-     * to the current call without a corresponding unpause()), no deadlock will
-     * occur.
-     */
-    m_pause_mutex.unlock();
     m_pause_mutex.lock();
   }
 
   void unpause()
   {
-    m_pause_mutex.unlock();
+    if (m_pause_mutex.try_lock())
+    {
+      m_pause_mutex.unlock();
+    }
   }
 
   void run_task()
@@ -188,7 +184,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   std::priority_queue<std::unique_ptr<task_base>,
       std::vector<std::unique_ptr<task_base>>, task_comparator> m_tasks;
 
-  std::mutex m_task_mutex, m_pause_mutex;
+  std::mutex m_task_mutex;
+  std::recursive_mutex m_pause_mutex;
   std::condition_variable m_task_ready, m_task_empty;
 
   unsigned int m_max_threads, m_despawn_time_ms;
