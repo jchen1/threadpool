@@ -110,8 +110,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       }
     }
     /*
-     * This is OK because we immediately pop the task afterwards, so we don't
-     * mess with the priority queue ordering invariant
+     * This is OK because we immediately pop the task afterwards and because
+     * we have already locked m_task_mutex, so the priority queue ordering
+     * invariant doesn't get messed up.
      */
     ret = std::move(const_cast<std::unique_ptr<task_base>&>(m_tasks.top()));
     m_tasks.pop();
