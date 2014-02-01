@@ -41,16 +41,6 @@ class pool
   }
 
   /*
-   * For a function object with no return value, the future will only be of
-   * use in determining whether the task has completed.
-   */
-  inline std::future<void> add_task(std::function<void(void)> const & func,
-                unsigned int priority = 0)
-  {
-    return m_core->add_task(func, priority);
-  }
-
-  /*
    * Pauses the thread pool - all currently executing tasks will finish, but any
    * remaining tasks in the task queue will not be executed until unpause() is
    * called. Tasks may still be added to the queue when the pool is paused.
