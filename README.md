@@ -55,6 +55,11 @@ int main(int argc, char** argv)
     tp.add_task(std::bind(func, 45), 45);
     tp.add_task(std::bind(func, 100), 100);     //executed before previous line
 
+    tp.add_task([]{
+        std::unique_lock<std::mutex> lck(mtx);
+        std::cout << 1000 << std::endl;
+    });
+
     tp.unpause();
 
     auto future = tp.add_task(std::bind(future_func, 50));
@@ -72,10 +77,11 @@ Sample output:
 
 100
 45
+1000
+0
 2
 4
 3
-0
 1
 50
 ```
