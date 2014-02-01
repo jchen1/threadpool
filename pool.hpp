@@ -34,12 +34,10 @@ class pool
    * arguments, use std::bind() on the function before adding it to the task
    * queue. Returns a future for the eventual return value of the function.
    */
-  template <typename T>
-  inline std::future<typename std::result_of<T()>::type>
-  add_task(T const & func, unsigned int priority = 0)
+  template <typename T, typename R = typename std::result_of<T()>::type>
+  inline std::future<R> add_task(T const & func, unsigned int priority = 0)
   {
-    return m_core->add_task(
-      (std::function<typename std::result_of<T()>::type(void)>)func, priority);
+    return m_core->add_task((std::function<R(void)>)func, priority);
   }
 
   /*
