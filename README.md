@@ -57,9 +57,7 @@ int main(int argc, char** argv)
 
     tp.unpause();
 
-    //for some reason you have to explicitly define this type
-    std::function<int(void)> f_func = std::bind(future_func, 50);
-    auto future = tp.add_task(f_func);
+    auto future = tp.add_task(std::bind(future_func, 50));
     
     tp.join(false);
 

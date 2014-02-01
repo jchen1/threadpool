@@ -59,12 +59,13 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   void pause()
   {
+    m_pause_mutex.unlock();
     m_pause_mutex.lock();
   }
 
   void unpause()
   {
-    if (m_pause_mutex.try_lock())
+    if (!m_pause_mutex.try_lock())
     {
       m_pause_mutex.unlock();
     }
@@ -76,6 +77,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     {
       m_pause_mutex.lock();
       m_pause_mutex.unlock();
+
       auto t = pop_task(m_despawn_time_ms);
       if (t)
       {
@@ -185,8 +187,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   std::priority_queue<std::unique_ptr<task_base>,
       std::vector<std::unique_ptr<task_base>>, task_comparator> m_tasks;
 
-  std::mutex m_task_mutex;
-  std::recursive_mutex m_pause_mutex;
+  std::mutex m_task_mutex, m_pause_mutex;
   std::condition_variable m_task_ready, m_task_empty;
 
   unsigned int m_max_threads, m_despawn_time_ms;

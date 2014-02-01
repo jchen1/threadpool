@@ -35,10 +35,11 @@ class pool
    * queue. Returns a future for the eventual return value of the function.
    */
   template <typename T>
-  inline std::future<T> add_task(std::function<T(void)> const & func,
-                       unsigned int priority = 0)
+  inline std::future<typename std::result_of<T()>::type>
+  add_task(T const & func, unsigned int priority = 0)
   {
-    return m_core->add_task(func, priority);
+    return m_core->add_task(
+      (std::function<typename std::result_of<T()>::type(void)>)func, priority);
   }
 
   /*
