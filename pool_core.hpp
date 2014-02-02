@@ -95,7 +95,9 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   void wait()
   {
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
-    m_task_empty.wait(task_lock, [&]{ return m_tasks.empty(); });
+    m_task_empty.wait(task_lock, [&]{
+      return m_tasks.empty() && !m_threads_running;
+    });
   }
 
   std::unique_ptr<task_base> pop_task(unsigned int max_wait)
