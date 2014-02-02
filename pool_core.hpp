@@ -90,14 +90,14 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       {
         return;
       }
-      clean_thread_list();
+      destroy_finished_threads();
     }
   }
 
   void wait()
   {
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
-    m_task_empty.wait(task_lock, [&]{
+    m_task_empty.wait(task_lock, [&] {
       return m_tasks.empty() && !m_threads_running;
     });
   }
@@ -190,14 +190,13 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
  private:
 
-  void clean_thread_list()
+  inline void destroy_finished_threads()
   {
     std::unique_lock<std::mutex> thread_lock(m_thread_mutex, std::defer_lock);
     if (thread_lock.try_lock())
     {
       auto to_erase = std::remove_if(begin(m_threads), end(m_threads),
-        [] (const decltype(m_threads)::value_type& thread)
-        {
+        [] (const decltype(m_threads)::value_type& thread) {
           return thread->should_destroy();
         });
       m_threads.erase(to_erase, end(m_threads));
