@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <condition_variable>
-#include <list>
 #include <mutex>
 #include <queue>
 #include <vector>
@@ -25,6 +24,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       m_threads_running(0),
       m_join_requested(false)
   {
+    m_threads.reserve(m_max_threads);
     if (start_paused)
     {
       pause();
@@ -195,13 +195,16 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     std::unique_lock<std::mutex> thread_lock(m_thread_mutex, std::defer_lock);
     if (thread_lock.try_lock())
     {
-      m_threads.remove_if([](const decltype(*begin(m_threads))& thread){
-        return thread->should_destroy();
-      });
+      auto to_erase = std::remove_if(begin(m_threads), end(m_threads),
+        [] (const decltype(m_threads)::value_type& thread)
+        {
+          return thread->should_destroy();
+        });
+      m_threads.erase(to_erase, end(m_threads));
     }
   }
 
-  std::list<std::unique_ptr<worker_thread<pool_core>>> m_threads;
+  std::vector<std::unique_ptr<worker_thread<pool_core>>> m_threads;
   std::priority_queue<std::unique_ptr<task_base>,
       std::vector<std::unique_ptr<task_base>>, task_comparator> m_tasks;
 
