@@ -111,8 +111,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
     while (m_tasks.empty())
     {
-      if (m_join_requested || 
-          m_task_ready.wait_for(task_lock,
+      if (m_join_requested || m_task_ready.wait_for(task_lock,
             std::chrono::milliseconds(max_wait)) == std::cv_status::timeout)
       {
         return ret;
@@ -168,7 +167,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     m_join_requested = false;
 
     m_threads.clear();
-
   }
 
   unsigned int get_threads_running() const
@@ -199,7 +197,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     if (thread_lock.try_lock())
     {
       auto to_erase = std::remove_if(begin(m_threads), end(m_threads),
-        [] (const decltype(m_threads)::value_type& thread) {
+        [] (auto const & thread) {
           return thread->should_destroy();
         });
       m_threads.erase(to_erase, end(m_threads));
