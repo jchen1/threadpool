@@ -44,7 +44,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
      * If all created threads are executing tasks and we have not spawned the
      * maximum number of allowed threads, create a new thread.
      */
-    if (m_threads_created == m_threads_running &&
+    if ((m_threads_created == m_threads_running || m_paused) &&
         m_threads_created != m_max_threads)
     {
       std::lock_guard<std::mutex> thread_lock(m_thread_mutex);
@@ -62,6 +62,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   {
     m_pause_mutex.unlock();
     m_pause_mutex.lock();
+    m_paused = true;
   }
 
   void unpause()
@@ -70,6 +71,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     {
       m_pause_mutex.unlock();
     }
+    m_paused = false;
   }
 
   void run_task()
@@ -213,7 +215,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   unsigned int m_max_threads, m_despawn_time_ms;
 
   std::atomic_uint m_threads_created, m_threads_running;
-  std::atomic_bool m_join_requested;
+  std::atomic_bool m_join_requested, m_paused;
 
   friend class worker_thread<pool_core>;
 };
