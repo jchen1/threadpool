@@ -110,9 +110,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
     while (m_tasks.empty())
     {
-      if (m_join_requested || 
-          m_task_ready.wait_for(task_lock,
-            std::chrono::milliseconds(max_wait)) == std::cv_status::timeout)
+      if (m_join_requested || m_task_ready.wait_for(task_lock,
+          std::chrono::milliseconds(max_wait)) == std::cv_status::timeout)
       {
         return ret;
       }
@@ -167,7 +166,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     m_join_requested = false;
 
     m_threads.clear();
-
   }
 
   unsigned int get_threads_running() const
