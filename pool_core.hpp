@@ -48,11 +48,12 @@ class pool_core : public std::enable_shared_from_this<pool_core>
         m_threads_created != m_max_threads)
     {
       std::lock_guard<std::mutex> thread_lock(m_thread_mutex);
-      m_threads.emplace_back(new worker_thread<pool_core>(shared_from_this()));
+      m_threads.emplace_back(
+        std::make_unique<worker_thread<pool_core>>(shared_from_this()));
     }
     auto promise = std::make_shared<std::promise<T>>();
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    m_tasks.emplace(new task<T>(func, priority, promise));
+    m_tasks.emplace(std::make_unique<task<T>>(func, priority, promise));
     m_task_ready.notify_one();
 
     return promise->get_future();
