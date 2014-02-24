@@ -37,8 +37,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
   
   template <typename T>
-  std::future<T> add_task(std::function<T(void)> const & func,
-                          unsigned int priority)
+  std::future<T> add_task(std::function<T(void)> const & func)
   {
     /*
      * If all created threads are executing tasks and we have not spawned the
@@ -52,7 +51,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
     auto promise = std::make_shared<std::promise<T>>();
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    m_tasks.emplace(new task<T>(func, priority, promise));
+    m_tasks.emplace(new task<T>(func, promise));
     m_task_ready.notify_one();
 
     return promise->get_future();
@@ -121,7 +120,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
      * we have already locked m_task_mutex, so the priority queue ordering
      * invariant doesn't get messed up.
      */
-    ret = std::move(const_cast<std::unique_ptr<task_base>&>(m_tasks.top()));
+    ret = std::move(const_cast<std::unique_ptr<task_base>&>(m_tasks.front()));
     m_tasks.pop();
 
     if (m_tasks.empty())
@@ -204,8 +203,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
   std::vector<std::unique_ptr<worker_thread<pool_core>>> m_threads;
-  std::priority_queue<std::unique_ptr<task_base>,
-      std::vector<std::unique_ptr<task_base>>, task_comparator> m_tasks;
+  std::queue<std::unique_ptr<task_base>> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex, m_thread_mutex;
   std::condition_variable m_task_ready, m_task_empty;

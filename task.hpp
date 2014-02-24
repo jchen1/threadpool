@@ -10,17 +10,8 @@ namespace threadpool {
 class task_base
 {
  public:
-  task_base(unsigned int priority) : m_priority(priority) {}
-
+  task_base() {}
   virtual void operator() (void) {}
-
-  unsigned int get_priority() const
-  {
-    return m_priority;
-  }
-
- private:
-  unsigned int m_priority;
 };
 
 template <typename T>
@@ -28,8 +19,8 @@ class task : public task_base
 {
  public:
   task(std::function<T(void)> const & function,
-       unsigned int priority, std::shared_ptr<std::promise<T>> p)
-    : task_base(priority), m_function(function), promise(p) {}
+       std::shared_ptr<std::promise<T>> p)
+    : task_base(), m_function(function), promise(p) {}
 
   void operator() (void)
   {
@@ -51,8 +42,8 @@ class task<void> : public task_base
 {
  public:
   task(std::function<void(void)> const & function,
-       unsigned int priority, std::shared_ptr<std::promise<void>> p)
-    : task_base(priority), m_function(function), promise(p) {}
+       std::shared_ptr<std::promise<void>> p)
+    : task_base(), m_function(function), promise(p) {}
 
   void operator() (void)
   {
@@ -68,16 +59,6 @@ class task<void> : public task_base
  private:
   std::function<void(void)> m_function;
   std::shared_ptr<std::promise<void>> promise;
-};
-
-class task_comparator
-{
- public:
-  bool operator() (const std::unique_ptr<task_base>& lhs,
-                   const std::unique_ptr<task_base>& rhs) const
-  {
-    return (lhs->get_priority() < rhs->get_priority());
-  }
 };
 
 }
