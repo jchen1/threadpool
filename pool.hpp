@@ -9,10 +9,10 @@ namespace threadpool {
  * Thread pool that does not need a master thread to manage load. A task is of
  * the form std::function<T(void)>, and the add_task() function will return a
  * std::future<T> which will contain the return value of the function. Tasks are
- * added to a max-priority queue. Threads are created only when there are no
- * idle threads available and the total thread count does not exceed the
- * maximum thread count. Threads are despawned if they are idle for more than
- * despawn_file_ms, the third argument in the constructor of the threadpool.
+ * placed in a queue. Threads are created only when there are no idle threads
+ * available and the total thread count does not exceed the maximum thread
+ * count. Threads are despawned if they are idle for more than despawn_file_ms,
+ * the third argument in the constructor of the threadpool.
  */
 class pool
 {
@@ -29,15 +29,17 @@ class pool
     : m_core(new pool_core(max_threads, start_paused, despawn_time_ms)) {}
 
   /*
-   * Adds a new task to the task queue, with an optional priority. The task
-   * must be a zero-argument function object. For a function that takes
-   * arguments, use std::bind() on the function before adding it to the task
-   * queue. Returns a future for the eventual return value of the function.
+   * Adds a new task to the task queue. The task must be a function object,
+   * and the remaining passed arguments must be parameters for task, which will
+   * be bound using std::bind().
    */
-  template <typename T, typename R = typename std::result_of<T()>::type>
-  inline std::future<R> add_task(T const & func, unsigned int priority = 0)
+  template <typename T, typename... Args, 
+            typename R = typename std::result_of<T(Args...)>::type>
+  inline std::future<R> add_task(T&& task, Args&&... args)
   {
-    return m_core->add_task((std::function<R(void)>)func, priority);
+    return m_core->add_task(
+      (std::function<R(void)>)std::bind(std::forward<T>(task),
+                                        std::forward<Args>(args)...));
   }
 
   /*
