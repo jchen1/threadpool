@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <condition_variable>
+#include <future>
 #include <mutex>
 #include <queue>
 #include <vector>
@@ -12,7 +13,7 @@
 
 namespace threadpool {
 
-class pool_core : public std::enable_shared_from_this<pool_core>
+class pool_core
 {
  public:
   pool_core(unsigned int max_threads,
@@ -81,13 +82,16 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     {
       m_pause_mutex.lock();
       m_pause_mutex.unlock();
-
-      auto t = pop_task(m_despawn_time_ms);
-      if (t)
+  
+      if (auto t = pop_task(m_despawn_time_ms))
       {
         ++m_threads_running;
         (*t)();
         --m_threads_running;
+        if (empty() && !m_threads_running)
+        {
+          m_task_empty.notify_all();
+        }
       }
       else if (m_join_requested.load())
       {
@@ -119,18 +123,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
         return ret;
       }
     }
-    /*
-     * This is OK because we immediately pop the task afterwards and because
-     * we have already locked m_task_mutex, so the priority queue ordering
-     * invariant doesn't get messed up.
-     */
-    ret = std::move(const_cast<std::unique_ptr<task_base>&>(m_tasks.front()));
+    ret = std::move(m_tasks.front());
     m_tasks.pop();
-
-    if (m_tasks.empty())
-    {
-      m_task_empty.notify_all();
-    }
 
     return ret;
   }
@@ -144,10 +138,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   void clear()
   {
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    while (!m_tasks.empty())
-    {
-      m_tasks.pop();
-    }
+    std::queue<std::unique_ptr<task_base>>().swap(m_tasks);
   }
 
   void join(bool clear_tasks)
@@ -192,7 +183,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
  private:
-
   inline void destroy_finished_threads()
   {
     std::unique_lock<std::mutex> thread_lock(m_thread_mutex, std::defer_lock);

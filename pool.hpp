@@ -91,7 +91,7 @@ class pool
 
   /*
    * Waits for the task queue to empty and for all worker threads to complete,
-   * without explicitly destroying worker threads.
+   * without destroying worker threads.
    */
   inline void wait()
   {
