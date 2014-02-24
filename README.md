@@ -1,7 +1,7 @@
 threadpool
 ==========
 
-Basic threadpool implementation without a master thread to manage load. Tasks submitted to the threadpool must have their arguments already bound, probably using `std::bind`. Tasks are added to a max-priority queue, with a default priority of 0. Threads are automatically created and destroyed to accomodate the load placed on the threadpool. This library uses C++11 features, so make sure to use a compiler that supports it.
+Basic threadpool implementation without a master thread to manage load. Tasks can be submitted with their parameters as extra arguments to threadpool::add_task(), as in std::bind(). Tasks are placed in a queue. Threads are automatically created and destroyed to accomodate the load placed on the threadpool. This library uses C++11 features, so make sure to use a compiler that supports it.
 
 Note that threadpool itself is not thread-safe: don't use a single threadpool object across multiple threads.
 
@@ -51,12 +51,9 @@ int main(int argc, char** argv)
     
     for (int i = 0; i < max_num; i++)
     {
-        tp.add_task(std::bind(func, i));
+        tp.add_task(func, i);
     }
     
-    tp.add_task(std::bind(func, 45), 45);
-    tp.add_task(std::bind(func, 100), 100);     //executed before previous line
-
     tp.add_task([]{
         std::unique_lock<std::mutex> lck(mtx);
         std::cout << 1000 << std::endl;
@@ -64,7 +61,7 @@ int main(int argc, char** argv)
 
     tp.unpause();
 
-    auto future = tp.add_task(std::bind(future_func, 50));
+    auto future = tp.add_task(future_func, 50);
     
     tp.join(false);
 
@@ -77,13 +74,11 @@ Sample output:
 ```
 ./sample 5 5
 
-100
-45
-1000
 0
-2
-4
-3
 1
+2
+3
+4
+1000
 50
 ```
