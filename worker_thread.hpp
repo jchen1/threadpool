@@ -5,30 +5,24 @@
 
 namespace threadpool {
 
-/*
- * worker_thread is templated to avoid cyclical includes - otherwise,
- * worker_thread.hpp would have to include pool_core.hpp and vice versa.
- */
-template <typename pool_core>
 class worker_thread
 {
  public:
-  worker_thread(std::shared_ptr<pool_core> pool)
-    : m_pool(pool),
-      m_thread(std::thread(std::bind(&worker_thread::run, this))),
+  worker_thread(std::function<void(void)>&& run_task)
+    : m_thread(std::thread(std::bind(&worker_thread::run, this, run_task))),
       m_should_destroy(false) {}
 
   ~worker_thread()
+  {
+    join();
+  }
+
+  void join()
   {
     if (m_thread.joinable())
     {
       m_thread.join();
     }
-  }
-
-  void join()
-  {
-    m_thread.join();
   }
 
   bool should_destroy() const
@@ -37,17 +31,13 @@ class worker_thread
   }
 
  private:
-  void run()
+  void run(std::function<void(void)> const & run_task)
   {
-    ++m_pool->m_threads_created;
-    m_pool->run_task();
-    --m_pool->m_threads_created;
+    run_task();
     m_should_destroy = true;
   }
 
-  std::shared_ptr<pool_core> m_pool;
   std::thread m_thread;
-
   bool m_should_destroy;
 };
 
