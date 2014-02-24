@@ -8,7 +8,6 @@
 #include <queue>
 #include <vector>
 
-#include "task.hpp"
 #include "worker_thread.hpp"
 
 namespace threadpool {
@@ -51,12 +50,11 @@ class pool_core
       m_threads.emplace_back(
         new worker_thread(std::bind(&pool_core::run_task, this)));
     }
-    auto promise = std::make_shared<std::promise<T>>();
+    auto task = std::make_shared<std::packaged_task<T()>>(func);
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    m_tasks.emplace(new task<T>(func, promise));
-    m_task_ready.notify_one();
+    m_tasks.emplace([task](){ (*task)(); });
 
-    return promise->get_future();
+    return task->get_future();
   }
 
   void pause()
@@ -86,7 +84,7 @@ class pool_core
       if (auto t = pop_task(m_despawn_time_ms))
       {
         ++m_threads_running;
-        (*t)();
+        t();
         --m_threads_running;
         if (empty() && !m_threads_running)
         {
@@ -111,9 +109,9 @@ class pool_core
     });
   }
 
-  std::unique_ptr<task_base> pop_task(unsigned int max_wait)
+  std::function<void(void)> pop_task(unsigned int max_wait)
   {
-    std::unique_ptr<task_base> ret;
+    std::function<void(void)> ret;
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
     while (m_tasks.empty())
     {
@@ -123,7 +121,7 @@ class pool_core
         return ret;
       }
     }
-    ret = std::move(m_tasks.front());
+    ret = m_tasks.front();
     m_tasks.pop();
 
     return ret;
@@ -138,7 +136,7 @@ class pool_core
   void clear()
   {
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    std::queue<std::unique_ptr<task_base>>().swap(m_tasks);
+    std::queue<std::function<void(void)>>().swap(m_tasks);
   }
 
   void join(bool clear_tasks)
@@ -197,7 +195,7 @@ class pool_core
   }
 
   std::vector<std::unique_ptr<worker_thread>> m_threads;
-  std::queue<std::unique_ptr<task_base>> m_tasks;
+  std::queue<std::function<void(void)>> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex, m_thread_mutex;
   std::condition_variable m_task_ready, m_task_empty;
