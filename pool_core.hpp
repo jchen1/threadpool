@@ -47,7 +47,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
         m_threads_created != m_max_threads)
     {
       std::lock_guard<std::mutex> thread_lock(m_thread_mutex);
-      m_threads.emplace_back(new worker_thread<pool_core>(shared_from_this()));
+      m_threads.emplace_back(
+        new worker_thread(std::bind(&pool_core::run_task, this)));
     }
     auto promise = std::make_shared<std::promise<T>>();
     std::lock_guard<std::mutex> task_lock(m_task_mutex);
@@ -74,7 +75,8 @@ class pool_core : public std::enable_shared_from_this<pool_core>
   }
 
   void run_task()
-  {  
+  {
+    ++m_threads_created;  
     while (m_threads_created <= m_max_threads)
     {
       m_pause_mutex.lock();
@@ -89,10 +91,12 @@ class pool_core : public std::enable_shared_from_this<pool_core>
       }
       else if (m_join_requested.load())
       {
+        --m_threads_created;
         return;
       }
       destroy_finished_threads();
     }
+    --m_threads_created;
   }
 
   void wait()
@@ -202,7 +206,7 @@ class pool_core : public std::enable_shared_from_this<pool_core>
     }
   }
 
-  std::vector<std::unique_ptr<worker_thread<pool_core>>> m_threads;
+  std::vector<std::unique_ptr<worker_thread>> m_threads;
   std::queue<std::unique_ptr<task_base>> m_tasks;
 
   std::mutex m_task_mutex, m_pause_mutex, m_thread_mutex;
@@ -212,8 +216,6 @@ class pool_core : public std::enable_shared_from_this<pool_core>
 
   std::atomic_uint m_threads_created, m_threads_running;
   std::atomic_bool m_join_requested, m_paused;
-
-  friend class worker_thread<pool_core>;
 };
 
 }
