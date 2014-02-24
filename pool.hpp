@@ -131,7 +131,7 @@ class pool
   }
 
  private:
-  std::shared_ptr<pool_core> m_core;
+  std::unique_ptr<pool_core> m_core;
 };
 
 }
