@@ -25,8 +25,8 @@ class pool
    */
   pool(unsigned int max_threads = std::thread::hardware_concurrency(),
        bool start_paused = false,
-       unsigned int despawn_time_ms = 1000)
-    : m_core(new pool_core(max_threads, start_paused, despawn_time_ms)) {}
+       unsigned int despawn_time = 1000)
+    : m_core(new pool_core(max_threads, start_paused, despawn_time)) {}
 
   /*
    * Adds a new task to the task queue. The task must be a function object,

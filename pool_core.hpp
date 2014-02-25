@@ -17,9 +17,9 @@ class pool_core
  public:
   pool_core(unsigned int max_threads,
             bool start_paused,
-            unsigned int despawn_time_ms)
+            unsigned int despawn_time)
     : m_max_threads(max_threads),
-      m_despawn_time_ms(despawn_time_ms),
+      m_despawn_time(despawn_time),
       m_threads_created(0),
       m_threads_running(0),
       m_join_requested(false)
@@ -81,7 +81,7 @@ class pool_core
       m_pause_mutex.lock();
       m_pause_mutex.unlock();
   
-      if (auto t = pop_task(m_despawn_time_ms))
+      if (auto t = pop_task())
       {
         ++m_threads_running;
         t();
@@ -109,14 +109,14 @@ class pool_core
     });
   }
 
-  std::function<void(void)> pop_task(unsigned int max_wait)
+  std::function<void(void)> pop_task()
   {
     std::function<void(void)> ret;
     std::unique_lock<std::mutex> task_lock(m_task_mutex);
     while (m_tasks.empty())
     {
       if (m_join_requested || m_task_ready.wait_for(task_lock,
-          std::chrono::milliseconds(max_wait)) == std::cv_status::timeout)
+          std::chrono::milliseconds(m_despawn_time)) == std::cv_status::timeout)
       {
         return ret;
       }
@@ -200,7 +200,7 @@ class pool_core
   std::mutex m_task_mutex, m_pause_mutex, m_thread_mutex;
   std::condition_variable m_task_ready, m_task_empty;
 
-  unsigned int m_max_threads, m_despawn_time_ms;
+  unsigned int m_max_threads, m_despawn_time;
 
   std::atomic_uint m_threads_created, m_threads_running;
   std::atomic_bool m_join_requested, m_paused;
