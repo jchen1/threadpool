@@ -92,12 +92,11 @@ class pool_core
       }
       else if (m_join_requested.load())
       {
-        --m_threads_created;
-        return;
+        break;
       }
-      destroy_finished_threads();
     }
     --m_threads_created;
+    destroy_finished_threads();
   }
 
   void wait()
