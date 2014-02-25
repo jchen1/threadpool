@@ -1,12 +1,8 @@
 #ifndef THREADPOOL_POOLCORE_H
 #define THREADPOOL_POOLCORE_H
 
-#include <algorithm>
-#include <condition_variable>
 #include <future>
-#include <mutex>
 #include <queue>
-#include <vector>
 
 #include "worker_thread.hpp"
 
