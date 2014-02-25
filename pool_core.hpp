@@ -65,6 +65,7 @@ class pool_core
   void unpause()
   {
     m_paused = false;
+    m_unpaused_cv.notify_all();
   }
 
   void run_task()
@@ -72,10 +73,12 @@ class pool_core
     ++m_threads_created;  
     while (m_threads_created <= m_max_threads)
     {
+      std::unique_lock<std::mutex> lck(m_pause_mutex);
       while (m_paused)
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        m_unpaused_cv.wait(lck);
       }
+      lck.unlock();
   
       if (auto t = pop_task())
       {
@@ -193,8 +196,8 @@ class pool_core
   std::vector<std::unique_ptr<worker_thread>> m_threads;
   std::queue<std::function<void(void)>> m_tasks;
 
-  std::mutex m_task_mutex, m_thread_mutex;
-  std::condition_variable m_task_ready, m_task_empty;
+  std::mutex m_task_mutex, m_thread_mutex, m_pause_mutex;
+  std::condition_variable m_task_ready, m_task_empty, m_unpaused_cv;
 
   unsigned int m_max_threads, m_despawn_time;
 
