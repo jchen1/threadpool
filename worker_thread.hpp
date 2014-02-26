@@ -9,8 +9,8 @@ class worker_thread
 {
  public:
   worker_thread(std::function<void(void)>&& run_task)
-    : thread(&worker_thread::run, this, run_task),
-      thread_completed(false) {}
+    : should_destroy(false),
+      thread(&worker_thread::run, this, run_task) {}
 
   ~worker_thread()
   {
@@ -25,20 +25,16 @@ class worker_thread
     }
   }
 
-  bool should_destroy() const
-  {
-    return thread_completed;
-  }
+  bool should_destroy;
 
  private:
   void run(std::function<void(void)>&& run_task)
   {
     run_task();
-    thread_completed = true;
+    should_destroy = true;
   }
 
   std::thread thread;
-  bool thread_completed;
 };
 
 }
