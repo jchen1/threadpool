@@ -45,9 +45,9 @@ int main(int argc, char** argv)
     int max_num = atoi(argv[1]);
     int num_threads = atoi(argv[2]);
     
-    // start the threadpool paused, with num_threads maximum threads and threads
+    // start the threadpool with num_threads maximum threads and threads
     // that despawn automatically after 1000 idle milliseconds
-    threadpool::pool tp(num_threads, true, 1000);
+    threadpool::pool tp(num_threads, 1000);
     
     for (int i = 0; i < max_num; i++)
     {
@@ -58,8 +58,6 @@ int main(int argc, char** argv)
         std::unique_lock<std::mutex> lck(mtx);
         std::cout << 1000 << std::endl;
     });
-
-    tp.unpause();
 
     auto future = tp.add_task(future_func, 50);
     
