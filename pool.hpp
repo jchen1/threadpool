@@ -22,19 +22,25 @@ class pool
 {
  public:
   /* 
-   * Creates a new thread pool, with max_threads threads allowed. Default 
-   * values are max_threads = std::thread::hardware_concurrency(), 
-   * which should return the number of physical cores the CPU has, and
-   * wait_time = 1000.
+   * Creates a new thread pool, with max_threads threads allowed. Starts paused
+   * if start_paused = true. Default values are max_threads = 
+   * std::thread::hardware_concurrency(), which should return the number of
+   * physical cores the CPU has, start_paused = false, and wait_time = 1000.
    */
   pool(unsigned int max_threads = std::thread::hardware_concurrency(),
+       bool start_paused = false,
        unsigned int wait_time = 1000)
     : max_threads(max_threads),
       wait_time(wait_time),
       threads_created(0),
       threads_running(0),
       join_requested(false)
-  {}
+  {
+    if (start_paused)
+    {
+      pause();
+    }
+  }
 
   /*
    * When the pool is destructed, it will first stop all worker threads.
@@ -117,8 +123,8 @@ class pool
 
     join_requested = true;
 
-    std::lock_guard<std::mutex> thread_lock(thread_mutex);
     task_ready.notify_all();
+    std::lock_guard<std::mutex> thread_lock(thread_mutex);
 
     for (auto&& thread : threads)
     {
