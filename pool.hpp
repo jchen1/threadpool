@@ -72,6 +72,7 @@ class pool
       std::bind(std::forward<T>(task), std::forward<Args>(args)...));
     std::lock_guard<std::mutex> task_lock(task_mutex);
     tasks.emplace([p_task](){ (*p_task)(); });
+    task_ready.notify_one();
 
     return p_task->get_future();
   }
