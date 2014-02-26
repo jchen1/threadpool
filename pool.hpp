@@ -131,6 +131,26 @@ class pool
   }
 
   /*
+   * Pauses the thread pool - all currently executing tasks will finish, but any
+   * remaining tasks in the task queue will not be executed until unpause() is
+   * called. Tasks may still be added to the queue when the pool is paused.
+   * Any spawned threads will not despawn.
+   */
+  void pause()
+  {
+    paused = true;
+  }
+
+  /*
+   * Unpauses the thread pool.
+   */
+  void unpause()
+  {
+    paused = false;
+    unpaused_cv.notify_all();
+  }
+
+  /*
    * Returns how many worker threads are currently executing a task.
    */
   unsigned int get_threads_running() const
@@ -193,7 +213,12 @@ class pool
   {
     ++threads_created;  
     while (threads_created <= max_threads)
-    {  
+    {
+      std::unique_lock<std::mutex> lck(pause_mutex);
+      while (paused)
+      {
+        unpaused_cv.wait(lck);
+      }
       if (auto t = pop_task())
       {
         ++threads_running;
@@ -219,14 +244,14 @@ class pool
   std::list<worker_thread> threads;
   std::queue<std::function<void(void)>> tasks;
 
-  std::mutex task_mutex, thread_mutex;
-  std::condition_variable task_ready, task_empty;
+  std::mutex task_mutex, thread_mutex, pause_mutex;
+  std::condition_variable task_ready, task_empty, unpaused_cv;
 
   unsigned int max_threads;
   std::chrono::milliseconds wait_time;
 
   std::atomic_uint threads_created, threads_running;
-  std::atomic_bool join_requested;
+  std::atomic_bool join_requested, paused;
 };
 
 }
