@@ -67,8 +67,7 @@ class pool
         threads_created != max_threads)
     {
       std::lock_guard<std::mutex> thread_lock(thread_mutex);
-      threads.emplace_back(
-        new worker_thread(std::bind(&pool::run_task, this)));
+      threads.emplace_back(std::bind(&pool::run_task, this));
     }
     auto p_task = std::make_shared<std::packaged_task<R()>>(
       std::bind(std::forward<T>(task), std::forward<Args>(args)...));
@@ -148,7 +147,7 @@ class pool
 
     for (auto&& thread : threads)
     {
-      thread->join();
+      thread.join();
     }
 
     join_requested = false;
@@ -189,19 +188,6 @@ class pool
   }
 
  private:
-  void destroy_finished_threads()
-  {
-    std::unique_lock<std::mutex> thread_lock(thread_mutex, std::defer_lock);
-    if (thread_lock.try_lock())
-    {
-      auto to_erase = std::remove_if(begin(threads), end(threads),
-        [] (const decltype(threads)::value_type& thread) {
-          return thread->should_destroy();
-        });
-      threads.erase(to_erase, end(threads));
-    }
-  }
-
   std::function<void(void)> pop_task()
   {
     std::function<void(void)> ret;
@@ -248,10 +234,17 @@ class pool
       }
     }
     --threads_created;
-    destroy_finished_threads();
+    
+    std::unique_lock<std::mutex> thread_lock(thread_mutex, std::defer_lock);
+    if (thread_lock.try_lock())
+    {
+      threads.remove_if([] (const worker_thread& thread) {
+        return thread.should_destroy;
+      });
+    }
   }
 
-  std::list<std::unique_ptr<worker_thread>> threads;
+  std::list<worker_thread> threads;
   std::queue<std::function<void(void)>> tasks;
 
   std::mutex task_mutex, thread_mutex, pause_mutex;
