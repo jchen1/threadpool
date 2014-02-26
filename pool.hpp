@@ -2,6 +2,7 @@
 #define THREADPOOL_POOLCORE_H
 
 #include <future>
+#include <list>
 #include <queue>
 
 #include "worker_thread.hpp"
@@ -35,7 +36,6 @@ class pool
       threads_running(0),
       join_requested(false)
   {
-    threads.reserve(max_threads);
     if (start_paused)
     {
       pause();
@@ -251,7 +251,7 @@ class pool
     destroy_finished_threads();
   }
 
-  std::vector<std::unique_ptr<worker_thread>> threads;
+  std::list<std::unique_ptr<worker_thread>> threads;
   std::queue<std::function<void(void)>> tasks;
 
   std::mutex task_mutex, thread_mutex, pause_mutex;
