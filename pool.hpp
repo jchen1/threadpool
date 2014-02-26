@@ -1,6 +1,7 @@
 #ifndef THREADPOOL_POOL_H
 #define THREADPOOL_POOL_H
 
+#include <condition_variable>
 #include <future>
 #include <list>
 #include <queue>
@@ -34,7 +35,8 @@ class pool
       wait_time(wait_time),
       threads_created(0),
       threads_running(0),
-      join_requested(false)
+      join_requested(false),
+      paused(start_paused)
   {
     if (start_paused)
     {
@@ -251,7 +253,7 @@ class pool
   std::queue<std::function<void(void)>> tasks;
 
   std::mutex task_mutex, thread_mutex, pause_mutex;
-  std::condition_variable task_ready, task_empty, unpaused_cv;
+  std::condition_variable_any task_ready, task_empty, unpaused_cv;
 
   unsigned int max_threads;
   std::chrono::milliseconds wait_time;
