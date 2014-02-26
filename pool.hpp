@@ -79,16 +79,13 @@ class pool
     return p_task->get_future();
   }
 
-  /*
-   * Waits for the task queue to empty and for all worker threads to complete,
-   * without destroying worker threads.
+  /* 
+   * Clears the task queue. Does not stop any running tasks.
    */
-  void wait()
+  void clear()
   {
-    std::unique_lock<std::mutex> task_lock(task_mutex);
-    task_empty.wait(task_lock, [&] {
-      return tasks.empty() && !threads_running;
-    });
+    std::lock_guard<std::mutex> task_lock(task_mutex);
+    std::queue<std::function<void(void)>>().swap(tasks);
   }
 
   /*
@@ -99,15 +96,6 @@ class pool
   {
     std::lock_guard<std::mutex> task_lock(task_mutex);
     return tasks.empty();
-  }
-
-  /* 
-   * Clears the task queue. Does not stop any running tasks.
-   */
-  void clear()
-  {
-    std::lock_guard<std::mutex> task_lock(task_mutex);
-    std::queue<std::function<void(void)>>().swap(tasks);
   }
 
   /*
@@ -159,6 +147,18 @@ class pool
   }
 
   /*
+   * Waits for the task queue to empty and for all worker threads to complete,
+   * without destroying worker threads.
+   */
+  void wait()
+  {
+    std::unique_lock<std::mutex> task_lock(task_mutex);
+    task_empty.wait(task_lock, [&] {
+      return tasks.empty() && !threads_running;
+    });
+  }
+
+  /*
    * Returns how many worker threads are currently executing a task.
    */
   unsigned int get_threads_running() const
@@ -175,19 +175,19 @@ class pool
   }
 
   /*
-   * Sets the maximum number of worker threads the thread pool can spawn.
-   */
-  void set_max_threads(unsigned int max_threads)
-  {
-    this->max_threads = max_threads;
-  }
-
-  /*
    * Returns the maximum number of worker threads the pool can spawn.
    */
   unsigned int get_max_threads() const
   {
     return max_threads;
+  }
+
+  /*
+   * Sets the maximum number of worker threads the thread pool can spawn.
+   */
+  void set_max_threads(unsigned int max_threads)
+  {
+    this->max_threads = max_threads;
   }
 
  private:
