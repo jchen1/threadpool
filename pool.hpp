@@ -203,6 +203,11 @@ class pool
     ret = tasks.front();
     tasks.pop();
 
+    if (!threads_running && tasks.empty())
+    {
+      task_empty.notify_all();
+    }
+
     return ret;
   }
 
@@ -211,40 +216,37 @@ class pool
     ++threads_created;  
     while (threads_created <= max_threads)
     {
+      /*
       std::unique_lock<std::mutex> lck(pause_mutex);
       while (paused)
       {
         unpaused_cv.wait(lck);
       }
-      lck.unlock();
+      lck.unlock();*/
   
       if (auto t = pop_task())
       {
         ++threads_running;
         t();
         --threads_running;
-        if (empty() && !threads_running)
-        {
-          task_empty.notify_all();
-        }
       }
-      else if (join_requested.load())
+      else //if (join_requested.load())
       {
         break;
       }
     }
     --threads_created;
-    
+    /*
     std::unique_lock<std::mutex> thread_lock(thread_mutex, std::defer_lock);
     if (thread_lock.try_lock())
     {
       threads.remove_if([] (const worker_thread& thread) {
         return thread.should_destroy;
       });
-    }
+    }*/
   }
 
-  std::list<worker_thread> threads;
+  std::list<std::thread> threads;
   std::queue<std::function<void(void)>> tasks;
 
   std::mutex task_mutex, thread_mutex, pause_mutex;
