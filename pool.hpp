@@ -25,12 +25,12 @@ class pool
    * Creates a new thread pool, with max_threads threads allowed. Default 
    * values are max_threads = std::thread::hardware_concurrency(), 
    * which should return the number of physical cores the CPU has, and
-   * despawn_time = 1000.
+   * wait_time = 1000.
    */
   pool(unsigned int max_threads = std::thread::hardware_concurrency(),
-       unsigned int despawn_time = 1000)
+       unsigned int wait_time = 1000)
     : max_threads(max_threads),
-      despawn_time(despawn_time),
+      wait_time(wait_time),
       threads_created(0),
       threads_running(0),
       join_requested(false)
@@ -169,8 +169,7 @@ class pool
     std::unique_lock<std::mutex> task_lock(task_mutex);
     while (tasks.empty() && !join_requested)
     {
-      if (task_ready.wait_for(task_lock,
-          std::chrono::milliseconds(despawn_time)) == std::cv_status::timeout)
+      if (task_ready.wait_for(task_lock, wait_time) == std::cv_status::timeout)
       {
         return ret;
       }
@@ -223,7 +222,8 @@ class pool
   std::mutex task_mutex, thread_mutex;
   std::condition_variable task_ready, task_empty;
 
-  unsigned int max_threads, despawn_time;
+  unsigned int max_threads;
+  std::chrono::milliseconds wait_time;
 
   std::atomic_uint threads_created, threads_running;
   std::atomic_bool join_requested;
