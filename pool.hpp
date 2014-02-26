@@ -149,10 +149,8 @@ class pool
    */
   void wait()
   {
-    std::unique_lock<std::mutex> task_lock(task_mutex);
-    task_empty.wait(task_lock, [&] {
-      return tasks.empty() && !threads_running;
-    });
+    std::unique_lock<std::mutex> lck(task_mutex);
+    task_empty.wait(lck, [&] { return tasks.empty() && !threads_running; });
   }
 
   unsigned int get_threads_running() const
@@ -190,12 +188,10 @@ class pool
   {
     std::function<void(void)> ret;
     std::unique_lock<std::mutex> task_lock(task_mutex);
-    while (tasks.empty() && !join_requested)
+    if (!task_ready.wait_for(task_lock, idle_time,
+        [&]{ return join_requested || !tasks.empty(); }))
     {
-      if (task_ready.wait_for(task_lock, idle_time) == std::cv_status::timeout)
-      {
-        return ret;
-      }
+      return ret;
     }
     if (join_requested)
     {
@@ -218,10 +214,7 @@ class pool
     while (threads_created <= max_threads)
     {
       std::unique_lock<std::mutex> lck(pause_mutex);
-      while (paused)
-      {
-        unpaused_cv.wait(lck);
-      }
+      unpaused_cv.wait(lck, [&] { return !paused; });
       if (auto t = pop_task())
       {
         ++threads_running;
@@ -235,8 +228,7 @@ class pool
     }
     --threads_created;
     
-    std::unique_lock<std::mutex> thread_lock(thread_mutex, std::defer_lock);
-    if (thread_lock.try_lock())
+    if (auto lck = std::unique_lock<std::mutex>(thread_mutex, std::try_to_lock))
     {
       threads.remove_if([] (const worker_thread& thread) {
         return thread.should_destroy;
