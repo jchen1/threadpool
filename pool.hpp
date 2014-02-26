@@ -26,13 +26,13 @@ class pool
    * Creates a new thread pool, with max_threads threads allowed. Starts paused
    * if start_paused = true. Default values are max_threads = 
    * std::thread::hardware_concurrency(), which should return the number of
-   * physical cores the CPU has, start_paused = false, and wait_time = 1000.
+   * physical cores the CPU has, start_paused = false, and idle_time = 1000.
    */
   pool(unsigned int max_threads = std::thread::hardware_concurrency(),
        bool start_paused = false,
-       unsigned int wait_time = 1000)
+       unsigned int idle_time = 1000)
     : max_threads(max_threads),
-      wait_time(wait_time),
+      idle_time(idle_time),
       threads_created(0),
       threads_running(0),
       join_requested(false),
@@ -175,14 +175,14 @@ class pool
     this->max_threads = max_threads;
   }
 
-  unsigned int get_wait_time() const
+  unsigned int get_idle_time() const
   {
-    return wait_time.count();
+    return idle_time.count();
   }
 
-  void set_wait_time(unsigned int wait_time)
+  void set_idle_time(unsigned int idle_time)
   {
-    this->wait_time = std::chrono::milliseconds(wait_time);
+    this->idle_time = std::chrono::milliseconds(idle_time);
   }
 
  private:
@@ -192,7 +192,7 @@ class pool
     std::unique_lock<std::mutex> task_lock(task_mutex);
     while (tasks.empty() && !join_requested)
     {
-      if (task_ready.wait_for(task_lock, wait_time) == std::cv_status::timeout)
+      if (task_ready.wait_for(task_lock, idle_time) == std::cv_status::timeout)
       {
         return ret;
       }
@@ -251,7 +251,7 @@ class pool
   std::condition_variable_any task_ready, task_empty, unpaused_cv;
 
   unsigned int max_threads;
-  std::chrono::milliseconds wait_time;
+  std::chrono::milliseconds idle_time;
 
   std::atomic_uint threads_created, threads_running;
   std::atomic_bool join_requested, paused;
