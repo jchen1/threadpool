@@ -137,9 +137,6 @@ class pool
     paused = true;
   }
 
-  /*
-   * Unpauses the thread pool.
-   */
   void unpause()
   {
     paused = false;
@@ -158,36 +155,34 @@ class pool
     });
   }
 
-  /*
-   * Returns how many worker threads are currently executing a task.
-   */
   unsigned int get_threads_running() const
   {
     return threads_running.load();
   }
 
-  /*
-   * Returns how many worker threads have been created.
-   */
   unsigned int get_threads_created() const
   {
     return threads_created.load();
   }
 
-  /*
-   * Returns the maximum number of worker threads the pool can spawn.
-   */
   unsigned int get_max_threads() const
   {
     return max_threads;
   }
 
-  /*
-   * Sets the maximum number of worker threads the thread pool can spawn.
-   */
   void set_max_threads(unsigned int max_threads)
   {
     this->max_threads = max_threads;
+  }
+
+  unsigned int get_wait_time() const
+  {
+    return wait_time.count();
+  }
+
+  void set_wait_time(unsigned int wait_time)
+  {
+    this->wait_time = std::chrono::milliseconds(wait_time);
   }
 
  private:
