@@ -1,5 +1,5 @@
-#ifndef THREADPOOL_POOLCORE_H
-#define THREADPOOL_POOLCORE_H
+#ifndef THREADPOOL_POOL_H
+#define THREADPOOL_POOL_H
 
 #include <future>
 #include <list>
@@ -63,8 +63,7 @@ class pool
      * If all created threads are executing tasks and we have not spawned the
      * maximum number of allowed threads, create a new thread.
      */
-    if ((threads_created == threads_running || paused) &&
-        threads_created != max_threads)
+    if (threads_created == threads_running && threads_created != max_threads)
     {
       std::lock_guard<std::mutex> thread_lock(thread_mutex);
       threads.emplace_back(std::bind(&pool::run_task, this));
@@ -258,4 +257,4 @@ class pool
 
 }
 
-#endif //THREADPOOL_POOLCORE_H
+#endif //THREADPOOL_POOL_H
