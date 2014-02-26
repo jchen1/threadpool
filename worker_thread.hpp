@@ -8,9 +8,9 @@ namespace threadpool {
 class worker_thread
 {
  public:
-  worker_thread(std::function<void(void)>&& run_task)
+  worker_thread(std::function<void(void)> run_task)
     : should_destroy(false),
-      thread(&worker_thread::run, this, run_task) {}
+      thread(std::bind(&worker_thread::run, this, run_task)) {}
 
   ~worker_thread()
   {
@@ -28,7 +28,7 @@ class worker_thread
   bool should_destroy;
 
  private:
-  void run(std::function<void(void)>&& run_task)
+  void run(std::function<void(void)> run_task)
   {
     run_task();
     should_destroy = true;

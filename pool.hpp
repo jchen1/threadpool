@@ -22,25 +22,19 @@ class pool
 {
  public:
   /* 
-   * Creates a new thread pool, with max_threads threads allowed. Starts paused
-   * if start_paused = true. Default values are max_threads = 
-   * std::thread::hardware_concurrency(), which should return the number of
-   * physical cores the CPU has, and start_paused = false.
+   * Creates a new thread pool, with max_threads threads allowed. Default 
+   * values are max_threads = std::thread::hardware_concurrency(), 
+   * which should return the number of physical cores the CPU has, and
+   * wait_time = 1000.
    */
   pool(unsigned int max_threads = std::thread::hardware_concurrency(),
-       bool start_paused = false,
-       unsigned int despawn_time = 1000)
+       unsigned int wait_time = 1000)
     : max_threads(max_threads),
-      despawn_time(despawn_time),
+      wait_time(wait_time),
       threads_created(0),
       threads_running(0),
       join_requested(false)
-  {
-    if (start_paused)
-    {
-      pause();
-    }
-  }
+  {}
 
   /*
    * When the pool is destructed, it will first stop all worker threads.
@@ -75,26 +69,6 @@ class pool
     task_ready.notify_one();
 
     return p_task->get_future();
-  }
-
-  /*
-   * Pauses the thread pool - all currently executing tasks will finish, but any
-   * remaining tasks in the task queue will not be executed until unpause() is
-   * called. Tasks may still be added to the queue when the pool is paused.
-   * Any spawned threads will not despawn.
-   */
-  void pause()
-  {
-    paused = true;
-  }
-
-  /*
-   * Unpauses the thread pool.
-   */
-  void unpause()
-  {
-    paused = false;
-    unpaused_cv.notify_all();
   }
 
   /*
@@ -144,6 +118,7 @@ class pool
     join_requested = true;
 
     std::lock_guard<std::mutex> thread_lock(thread_mutex);
+    task_ready.notify_all();
 
     for (auto&& thread : threads)
     {
@@ -192,16 +167,24 @@ class pool
   {
     std::function<void(void)> ret;
     std::unique_lock<std::mutex> task_lock(task_mutex);
-    while (tasks.empty())
+    while (tasks.empty() && !join_requested)
     {
-      if (join_requested || task_ready.wait_for(task_lock,
-          std::chrono::milliseconds(despawn_time)) == std::cv_status::timeout)
+      if (task_ready.wait_for(task_lock, wait_time) == std::cv_status::timeout)
       {
         return ret;
       }
     }
+    if (join_requested)
+    {
+      return ret;
+    }
     ret = tasks.front();
     tasks.pop();
+
+    if (!threads_running && tasks.empty())
+    {
+      task_empty.notify_all();
+    }
 
     return ret;
   }
@@ -210,25 +193,14 @@ class pool
   {
     ++threads_created;  
     while (threads_created <= max_threads)
-    {
-      std::unique_lock<std::mutex> lck(pause_mutex);
-      while (paused)
-      {
-        unpaused_cv.wait(lck);
-      }
-      lck.unlock();
-  
+    {  
       if (auto t = pop_task())
       {
         ++threads_running;
         t();
         --threads_running;
-        if (empty() && !threads_running)
-        {
-          task_empty.notify_all();
-        }
       }
-      else if (join_requested.load())
+      else
       {
         break;
       }
@@ -247,13 +219,14 @@ class pool
   std::list<worker_thread> threads;
   std::queue<std::function<void(void)>> tasks;
 
-  std::mutex task_mutex, thread_mutex, pause_mutex;
-  std::condition_variable task_ready, task_empty, unpaused_cv;
+  std::mutex task_mutex, thread_mutex;
+  std::condition_variable task_ready, task_empty;
 
-  unsigned int max_threads, despawn_time;
+  unsigned int max_threads;
+  std::chrono::milliseconds wait_time;
 
   std::atomic_uint threads_created, threads_running;
-  std::atomic_bool join_requested, paused;
+  std::atomic_bool join_requested;
 };
 
 }
