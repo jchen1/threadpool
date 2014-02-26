@@ -29,13 +29,13 @@ class pool
   pool(unsigned int max_threads = std::thread::hardware_concurrency(),
        bool start_paused = false,
        unsigned int despawn_time = 1000)
-    : m_max_threads(max_threads),
-      m_despawn_time(despawn_time),
-      m_threads_created(0),
-      m_threads_running(0),
-      m_join_requested(false)
+    : max_threads(max_threads),
+      despawn_time(despawn_time),
+      threads_created(0),
+      threads_running(0),
+      join_requested(false)
   {
-    m_threads.reserve(m_max_threads);
+    threads.reserve(max_threads);
     if (start_paused)
     {
       pause();
@@ -63,17 +63,17 @@ class pool
      * If all created threads are executing tasks and we have not spawned the
      * maximum number of allowed threads, create a new thread.
      */
-    if ((m_threads_created == m_threads_running || m_paused) &&
-        m_threads_created != m_max_threads)
+    if ((threads_created == threads_running || paused) &&
+        threads_created != max_threads)
     {
-      std::lock_guard<std::mutex> thread_lock(m_thread_mutex);
-      m_threads.emplace_back(
+      std::lock_guard<std::mutex> thread_lock(thread_mutex);
+      threads.emplace_back(
         new worker_thread(std::bind(&pool::run_task, this)));
     }
     auto p_task = std::make_shared<std::packaged_task<R()>>(
       std::bind(std::forward<T>(task), std::forward<Args>(args)...));
-    std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    m_tasks.emplace([p_task](){ (*p_task)(); });
+    std::lock_guard<std::mutex> task_lock(task_mutex);
+    tasks.emplace([p_task](){ (*p_task)(); });
 
     return p_task->get_future();
   }
@@ -86,7 +86,7 @@ class pool
    */
   void pause()
   {
-    m_paused = true;
+    paused = true;
   }
 
   /*
@@ -94,8 +94,8 @@ class pool
    */
   void unpause()
   {
-    m_paused = false;
-    m_unpaused_cv.notify_all();
+    paused = false;
+    unpaused_cv.notify_all();
   }
 
   /*
@@ -104,9 +104,9 @@ class pool
    */
   void wait()
   {
-    std::unique_lock<std::mutex> task_lock(m_task_mutex);
-    m_task_empty.wait(task_lock, [&] {
-      return m_tasks.empty() && !m_threads_running;
+    std::unique_lock<std::mutex> task_lock(task_mutex);
+    task_empty.wait(task_lock, [&] {
+      return tasks.empty() && !threads_running;
     });
   }
 
@@ -116,8 +116,8 @@ class pool
    */
   bool empty()
   {
-    std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    return m_tasks.empty();
+    std::lock_guard<std::mutex> task_lock(task_mutex);
+    return tasks.empty();
   }
 
   /* 
@@ -125,8 +125,8 @@ class pool
    */
   void clear()
   {
-    std::lock_guard<std::mutex> task_lock(m_task_mutex);
-    std::queue<std::function<void(void)>>().swap(m_tasks);
+    std::lock_guard<std::mutex> task_lock(task_mutex);
+    std::queue<std::function<void(void)>>().swap(tasks);
   }
 
   /*
@@ -142,18 +142,18 @@ class pool
       clear();
     }
 
-    m_join_requested = true;
+    join_requested = true;
 
-    std::lock_guard<std::mutex> thread_lock(m_thread_mutex);
+    std::lock_guard<std::mutex> thread_lock(thread_mutex);
 
-    for (auto&& thread : m_threads)
+    for (auto&& thread : threads)
     {
       thread->join();
     }
 
-    m_join_requested = false;
+    join_requested = false;
 
-    m_threads.clear();
+    threads.clear();
   }
 
   /*
@@ -161,7 +161,7 @@ class pool
    */
   unsigned int get_threads_running() const
   {
-    return m_threads_running.load();
+    return threads_running.load();
   }
 
   /*
@@ -169,7 +169,7 @@ class pool
    */
   unsigned int get_threads_created() const
   {
-    return m_threads_created.load();
+    return threads_created.load();
   }
 
   /*
@@ -177,7 +177,7 @@ class pool
    */
   void set_max_threads(unsigned int max_threads)
   {
-    m_max_threads = max_threads;
+    this->max_threads = max_threads;
   }
 
   /*
@@ -185,82 +185,82 @@ class pool
    */
   unsigned int get_max_threads() const
   {
-    return m_max_threads;
+    return max_threads;
   }
 
  private:
   void destroy_finished_threads()
   {
-    std::unique_lock<std::mutex> thread_lock(m_thread_mutex, std::defer_lock);
+    std::unique_lock<std::mutex> thread_lock(thread_mutex, std::defer_lock);
     if (thread_lock.try_lock())
     {
-      auto to_erase = std::remove_if(begin(m_threads), end(m_threads),
-        [] (const decltype(m_threads)::value_type& thread) {
+      auto to_erase = std::remove_if(begin(threads), end(threads),
+        [] (const decltype(threads)::value_type& thread) {
           return thread->should_destroy();
         });
-      m_threads.erase(to_erase, end(m_threads));
+      threads.erase(to_erase, end(threads));
     }
   }
 
   std::function<void(void)> pop_task()
   {
     std::function<void(void)> ret;
-    std::unique_lock<std::mutex> task_lock(m_task_mutex);
-    while (m_tasks.empty())
+    std::unique_lock<std::mutex> task_lock(task_mutex);
+    while (tasks.empty())
     {
-      if (m_join_requested || m_task_ready.wait_for(task_lock,
-          std::chrono::milliseconds(m_despawn_time)) == std::cv_status::timeout)
+      if (join_requested || task_ready.wait_for(task_lock,
+          std::chrono::milliseconds(despawn_time)) == std::cv_status::timeout)
       {
         return ret;
       }
     }
-    ret = m_tasks.front();
-    m_tasks.pop();
+    ret = tasks.front();
+    tasks.pop();
 
     return ret;
   }
 
   void run_task()
   {
-    ++m_threads_created;  
-    while (m_threads_created <= m_max_threads)
+    ++threads_created;  
+    while (threads_created <= max_threads)
     {
-      std::unique_lock<std::mutex> lck(m_pause_mutex);
-      while (m_paused)
+      std::unique_lock<std::mutex> lck(pause_mutex);
+      while (paused)
       {
-        m_unpaused_cv.wait(lck);
+        unpaused_cv.wait(lck);
       }
       lck.unlock();
   
       if (auto t = pop_task())
       {
-        ++m_threads_running;
+        ++threads_running;
         t();
-        --m_threads_running;
-        if (empty() && !m_threads_running)
+        --threads_running;
+        if (empty() && !threads_running)
         {
-          m_task_empty.notify_all();
+          task_empty.notify_all();
         }
       }
-      else if (m_join_requested.load())
+      else if (join_requested.load())
       {
         break;
       }
     }
-    --m_threads_created;
+    --threads_created;
     destroy_finished_threads();
   }
 
-  std::vector<std::unique_ptr<worker_thread>> m_threads;
-  std::queue<std::function<void(void)>> m_tasks;
+  std::vector<std::unique_ptr<worker_thread>> threads;
+  std::queue<std::function<void(void)>> tasks;
 
-  std::mutex m_task_mutex, m_thread_mutex, m_pause_mutex;
-  std::condition_variable m_task_ready, m_task_empty, m_unpaused_cv;
+  std::mutex task_mutex, thread_mutex, pause_mutex;
+  std::condition_variable task_ready, task_empty, unpaused_cv;
 
-  unsigned int m_max_threads, m_despawn_time;
+  unsigned int max_threads, despawn_time;
 
-  std::atomic_uint m_threads_created, m_threads_running;
-  std::atomic_bool m_join_requested, m_paused;
+  std::atomic_uint threads_created, threads_running;
+  std::atomic_bool join_requested, paused;
 };
 
 }

@@ -9,8 +9,8 @@ class worker_thread
 {
  public:
   worker_thread(std::function<void(void)>&& run_task)
-    : m_thread(&worker_thread::run, this, run_task),
-      m_should_destroy(false) {}
+    : thread(&worker_thread::run, this, run_task),
+      thread_completed(false) {}
 
   ~worker_thread()
   {
@@ -19,26 +19,26 @@ class worker_thread
 
   void join()
   {
-    if (m_thread.joinable())
+    if (thread.joinable())
     {
-      m_thread.join();
+      thread.join();
     }
   }
 
   bool should_destroy() const
   {
-    return m_should_destroy;
+    return thread_completed;
   }
 
  private:
   void run(std::function<void(void)>&& run_task)
   {
     run_task();
-    m_should_destroy = true;
+    thread_completed = true;
   }
 
-  std::thread m_thread;
-  bool m_should_destroy;
+  std::thread thread;
+  bool thread_completed;
 };
 
 }
