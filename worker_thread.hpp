@@ -10,7 +10,7 @@ class worker_thread
  public:
   worker_thread(std::function<void(void)> run_task)
     : should_destroy(false),
-      thread(run_task) {}
+      thread(std::bind(&worker_thread::run, this, run_task)) {}
 
   ~worker_thread()
   {
