@@ -112,20 +112,18 @@ class pool
     {
       clear();
     }
-
     join_requested = true;
 
     task_ready.notify_all();
-    std::lock_guard<std::mutex> thread_lock(thread_mutex);
-
-    for (auto&& thread : threads)
     {
-      thread.join();
+      std::lock_guard<std::mutex> thread_lock(thread_mutex);
+      for (auto&& thread : threads)
+      {
+        thread.join();
+      }
+      threads.clear();
     }
-
     join_requested = false;
-
-    threads.clear();
   }
 
   /*
@@ -191,11 +189,7 @@ class pool
     std::function<void(void)> ret;
     std::unique_lock<std::mutex> task_lock(task_mutex);
     if (!task_ready.wait_for(task_lock, idle_time,
-        [&]{ return join_requested || !tasks.empty(); }))
-    {
-      return ret;
-    }
-    if (join_requested)
+        [&]{ return join_requested || !tasks.empty(); }) || join_requested)
     {
       return ret;
     }
