@@ -239,8 +239,8 @@ class pool
   unsigned int max_threads;
   std::chrono::milliseconds idle_time;
 
-  std::atomic_uint threads_created, threads_running;
-  std::atomic_bool join_requested, paused;
+  std::atomic<unsigned int> threads_created, threads_running;
+  std::atomic<bool> join_requested, paused;
 };
 
 }
