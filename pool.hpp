@@ -49,7 +49,7 @@ class pool
    */
   ~pool()
   {
-    join(false);
+    join();
   }
 
   /*
@@ -225,7 +225,7 @@ class pool
     if (std::unique_lock<std::mutex>(thread_mutex, std::try_to_lock))
     {
       threads.remove_if([] (const worker_thread& thread) {
-        return thread.should_destroy;
+        return !thread.running;
       });
     }
   }

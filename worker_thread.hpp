@@ -9,7 +9,7 @@ class worker_thread
 {
  public:
   worker_thread(std::function<void(void)> run_task)
-    : should_destroy(false),
+    : running(true),
       thread(std::bind(&worker_thread::run, this, run_task)) {}
 
   ~worker_thread()
@@ -25,13 +25,13 @@ class worker_thread
     }
   }
 
-  bool should_destroy;
+  bool running;
 
  private:
   void run(std::function<void(void)> run_task)
   {
     run_task();
-    should_destroy = true;
+    running = false;
   }
 
   std::thread thread;

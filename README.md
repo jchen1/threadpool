@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
     auto future = tp.add_task(future_func, 50);
     
-    tp.join(false);
+    tp.join();
 
     std::cout << future.get() << std::endl; //prints 50
 }
