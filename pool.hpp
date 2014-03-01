@@ -101,20 +101,14 @@ class pool
   }
 
   /*
-   * Waits for all threads to finish executing. join(true) will clear any
-   * remaining tasks in the task queue, thus exiting once any running workers
-   * finish. join(false), on the other hand, will wait until the task queue
-   * is empty and the running workers finish. Spawned threads will exit.
+   * Waits for all threads to finish executing. All worker threads will exit.
    */
-  void join(bool clear_tasks = false)
+  void join()
   {
-    if (clear_tasks)
-    {
-      clear();
-    }
     join_requested = true;
 
     task_ready.notify_all();
+    unpause();
     {
       std::lock_guard<std::mutex> thread_lock(thread_mutex);
       for (auto&& thread : threads)
@@ -147,8 +141,12 @@ class pool
    * Waits for the task queue to empty and for all worker threads to complete,
    * without destroying worker threads.
    */
-  void wait()
+  void wait(bool clear_tasks = false)
   {
+    if (clear_tasks)
+    {
+      clear();
+    }
     std::unique_lock<std::mutex> lck(task_mutex);
     task_empty.wait(lck, [&] { return tasks.empty() && !threads_running; });
   }
