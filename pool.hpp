@@ -186,28 +186,25 @@ class pool
   {
     std::function<void(void)> ret;
     std::unique_lock<std::mutex> task_lock(task_mutex);
-    if (idle_time > 0)
+    if (idle_time.count() > 0)
     {
-      if (!task_ready.wait_for(task_lock, idle_time,
-          [&]{ return join_requested || !tasks.empty(); }) || join_requested)
-      {
-        return ret;
-      }
+      task_ready.wait_for(task_lock, idle_time,
+        [&]{ return join_requested || !tasks.empty(); });
     }
     else
     {
-      if (!task_ready.wait(task_lock,
-          [&]{ return join_requested || !tasks.empty(); }) || join_requested)
-      {
-        return ret;
-      }
+      task_ready.wait(task_lock,
+        [&]{ return join_requested || !tasks.empty(); });
     }
-    ret = tasks.front();
-    tasks.pop();
-
-    if (!threads_running && tasks.empty())
+    if (!tasks.empty())
     {
-      task_empty.notify_all();
+      ret = tasks.front();
+      tasks.pop();
+
+      if (!threads_running && tasks.empty())
+      {
+        task_empty.notify_all();
+      }
     }
 
     return ret;
