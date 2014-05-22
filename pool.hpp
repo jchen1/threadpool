@@ -22,9 +22,9 @@ namespace threadpool {
 class pool
 {
  public:
-  /* 
+  /*
    * Creates a new thread pool, with max_threads threads allowed. Starts paused
-   * if start_paused = true. Default values are max_threads = 
+   * if start_paused = true. Default values are max_threads =
    * std::thread::hardware_concurrency(), which should return the number of
    * physical cores the CPU has, start_paused = false, and idle_time = 1000.
    */
@@ -81,7 +81,7 @@ class pool
     return p_task->get_future();
   }
 
-  /* 
+  /*
    * Clears the task queue. Does not stop any running tasks.
    */
   void clear()
@@ -200,11 +200,6 @@ class pool
     {
       ret = tasks.front();
       tasks.pop();
-
-      if (!threads_running && tasks.empty())
-      {
-        task_empty.notify_all();
-      }
     }
 
     return ret;
@@ -212,16 +207,23 @@ class pool
 
   void run_task()
   {
-    ++threads_created;  
+    ++threads_created;
     while (threads_created <= max_threads)
     {
-      std::unique_lock<std::mutex> lck(pause_mutex);
-      unpaused_cv.wait(lck, [&] { return !paused; });
+      {
+        std::unique_lock<std::mutex> lck(pause_mutex);
+        unpaused_cv.wait(lck, [&] { return !paused; });
+      }
       if (auto t = pop_task())
       {
         ++threads_running;
         t();
         --threads_running;
+
+        if (!threads_running && empty())
+        {
+          task_empty.notify_all();
+        }
       }
       else
       {
@@ -229,7 +231,7 @@ class pool
       }
     }
     --threads_created;
-    
+
     if (std::unique_lock<std::mutex>(thread_mutex, std::try_to_lock))
     {
       threads.remove_if([] (const worker_thread& thread) {
